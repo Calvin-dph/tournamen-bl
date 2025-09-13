@@ -11,6 +11,7 @@ interface FormData {
 }
 
 const bidangOptions = [
+  'Teknologi Informasi (TI)',
   'Akuntansi',
   'Digital Marketing dan Media Sosial (BDMMS)',
   'Implementasi Materi Pelajaran (BIMP)',
