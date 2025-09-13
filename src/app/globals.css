@@ -40,8 +40,24 @@ body {
   }
 }
 
+@keyframes spotlight {
+
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
 .text-shadow {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.text-shadow-lg {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* Custom scrollbar */
@@ -50,17 +66,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #1e293b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e74c3c;
+  background: #f59e0b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #c0392b;
+  background: #d97706;
 }
 
 /* Responsive design improvements */
@@ -71,31 +87,29 @@ body {
   }
 }
 
-/* Form input styling to ensure text visibility */
-input,
-textarea,
-select {
-  color: #374151 !important;
-  /* dark gray text */
-  background-color: #ffffff !important;
-  /* white background */
+/* Form input styling for dark theme */
+.dark-form input,
+.dark-form textarea,
+.dark-form select {
+  color: #e2e8f0 !important;
+  background-color: rgba(51, 65, 85, 0.5) !important;
+  border-color: #475569 !important;
 }
 
-input::placeholder,
-textarea::placeholder {
-  color: #6b7280 !important;
-  /* gray placeholder */
+.dark-form input::placeholder,
+.dark-form textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
-/* Dark mode form fixes */
-@media (prefers-color-scheme: dark) {
+.dark-form input:focus,
+.dark-form textarea:focus,
+.dark-form select:focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+}
 
-  input,
-  textarea,
-  select {
-    color: #374151 !important;
-    /* keep dark text even in dark mode for better visibility */
-    background-color: #ffffff !important;
-    /* keep white background */
-  }
+/* Option styling for dark select */
+.dark-form select option {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
 }
