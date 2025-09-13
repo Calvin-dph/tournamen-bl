@@ -126,7 +126,7 @@ export default function RegistrationForm() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div className="w-full max-w-[420px] mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
       {/* Form Header */}
       <div className="bg-gradient-to-r from-[#2c3e50] via-[#34495e] to-[#2c3e50] text-white p-6 text-center">
         <h2 className="text-2xl font-bold mb-2">📝 FORM PENDAFTARAN</h2>
