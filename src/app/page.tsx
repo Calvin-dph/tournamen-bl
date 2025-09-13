@@ -18,21 +18,21 @@ export default function Home() {
       {/* Spotlight Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-400/10 rounded-full blur-3xl"></div>
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
-      
+
       {/* Original Poster Design */}
-      <div className="w-full max-w-[420px] mx-auto bg-gradient-to-b from-[#1e293b] to-[#0f172a] rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden border border-slate-700/50 relative z-10">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-[#1e293b] to-[#0f172a] rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden border border-slate-700/50 relative z-10">
         {/* Header */}
         <div className="relative bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#1d4ed8] text-white p-6 text-center overflow-hidden">
           {/* Spotlight effect */}
           <div className="absolute inset-0 bg-gradient-to-b from-cyan-400/20 via-transparent to-transparent"></div>
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-          
+
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-4 left-4 w-2 h-2 bg-cyan-300 rounded-full animate-pulse"></div>
             <div className="absolute top-8 right-6 w-1 h-1 bg-blue-300 rounded-full animate-pulse delay-300"></div>
             <div className="absolute bottom-4 left-8 w-1.5 h-1.5 bg-cyan-200 rounded-full animate-pulse delay-700"></div>
           </div>
-          
+
           <div className="relative z-10">
             <div className="w-16 h-16 bg-gradient-to-br from-[#f59e0b] via-[#d97706] to-[#b45309] rounded-full mx-auto mb-4 flex items-center justify-center text-3xl shadow-[0_8px_25px_rgba(245,158,11,0.4)] border-2 border-amber-400/30">
               🎱
@@ -50,7 +50,7 @@ export default function Home() {
               <div className="text-lg mt-0.5">📅</div>
               <div>
                 <div className="text-xs font-semibold text-cyan-300 uppercase tracking-wide mb-1">Tanggal</div>
-                <div className="text-sm text-slate-200 leading-relaxed">13 - 18 Oktober 2025<br/>18.00 - 20.00 WIB</div>
+                <div className="text-sm text-slate-200 leading-relaxed">13 - 18 Oktober 2025<br />18.00 - 20.00 WIB</div>
               </div>
             </div>
 
@@ -58,7 +58,14 @@ export default function Home() {
               <div className="text-lg mt-0.5">📍</div>
               <div>
                 <div className="text-xs font-semibold text-cyan-300 uppercase tracking-wide mb-1">Lokasi</div>
-                <div className="text-sm text-slate-200 leading-relaxed">Greenlight Cafe & Billiard<br/>Jl. Purnawarman No.3, Bandung</div>
+                <a 
+                  href="https://maps.app.goo.gl/72h8Q2hkXQbp4LQy8" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-200 leading-relaxed hover:text-amber-400 transition-colors cursor-pointer underline decoration-dotted underline-offset-2"
+                >
+                  Greenlight Cafe & Billiard<br />Jl. Purnawarman No.3, Bandung
+                </a>
               </div>
             </div>
 
@@ -66,7 +73,7 @@ export default function Home() {
               <div className="text-lg mt-0.5">⚡</div>
               <div>
                 <div className="text-xs font-semibold text-cyan-300 uppercase tracking-wide mb-1">Format</div>
-                <div className="text-sm text-slate-200 leading-relaxed">Sistem Grup • Setengah Kompetisi<br/>Max 4 tim (8 karyawan) per bidang</div>
+                <div className="text-sm text-slate-200 leading-relaxed">Sistem Grup • Setengah Kompetisi<br />Max 2 team ( 4 Karyawan ) per bidang</div>
               </div>
             </div>
           </div>
@@ -125,7 +132,7 @@ export default function Home() {
           {/* Contact */}
           <div className="text-center pt-4 border-t border-slate-600/50">
             <div className="text-xs text-cyan-300 mb-1 uppercase tracking-wide">Informasi & Pendaftaran:</div>
-            <a 
+            <a
               href="https://wa.me/+6285624055869"
               target="_blank"
               rel="noopener noreferrer"

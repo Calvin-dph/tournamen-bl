@@ -78,17 +78,17 @@ export default function RegistrationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Clear previous messages
     setMessage('');
     setErrors({});
-    
+
     // Validate form
     if (!validateForm()) {
       setMessage('Silakan perbaiki kesalahan pada form');
       return;
     }
-    
+
     setIsSubmitting(true);
 
     try {
@@ -123,13 +123,13 @@ export default function RegistrationForm() {
   };
 
   return (
-    <div className="w-full max-w-[420px] mx-auto bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700/50">
+    <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700/50">
       {/* Form Header */}
       <div className="bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#1d4ed8] text-white p-6 text-center relative overflow-hidden">
         {/* Spotlight effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-cyan-400/20 via-transparent to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-        
+
         <div className="relative z-10">
           <div className="w-12 h-12 bg-gradient-to-br from-[#f59e0b] via-[#d97706] to-[#b45309] rounded-full mx-auto mb-3 flex items-center justify-center text-2xl shadow-[0_8px_25px_rgba(245,158,11,0.4)] border-2 border-amber-400/30">
             📝
@@ -145,7 +145,7 @@ export default function RegistrationForm() {
         <div className="bg-gradient-to-r from-blue-900/50 to-slate-800/50 border-l-4 border-cyan-400 p-4 mb-6 backdrop-blur-sm">
           <h3 className="font-semibold text-cyan-300 mb-2">📋 Petunjuk Pendaftaran:</h3>
           <ul className="text-sm text-slate-300 space-y-1">
-            <li>• Maksimal setiap bidang mendaftarkan 4 Team (8 Karyawan)</li>
+            <li>• Maksimal setiap bidang mendaftarkan 2 Team (4 Karyawan)</li>
             <li>• Di setiap Kolom Team, tuliskan 2 Nama (contoh: Michael Sean & Yoga)</li>
             <li>• Di kolom Nomor Handphone cantumkan semua nomor peserta (WA)</li>
             <li>• Contoh: 083822743692 & 083822743693 & 083822743694 & 083822743692</li>
@@ -164,9 +164,8 @@ export default function RegistrationForm() {
               value={formData.bidang}
               onChange={handleInputChange}
               required
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all text-slate-200 bg-slate-700/50 backdrop-blur-sm placeholder-slate-400 ${
-                errors.bidang ? 'border-red-400' : 'border-slate-600'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all text-slate-200 bg-slate-700/50 backdrop-blur-sm placeholder-slate-400 ${errors.bidang ? 'border-red-400' : 'border-slate-600'
+                }`}
             >
               <option value="" className="bg-slate-800 text-slate-300">Pilih Bidang</option>
               {bidangOptions.map((bidang) => (
@@ -193,9 +192,8 @@ export default function RegistrationForm() {
               onChange={handleInputChange}
               placeholder="Contoh: Michael Sean & Yoga"
               required
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all text-slate-200 bg-slate-700/50 backdrop-blur-sm placeholder-slate-400 ${
-                errors.team1 ? 'border-red-400' : 'border-slate-600'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all text-slate-200 bg-slate-700/50 backdrop-blur-sm placeholder-slate-400 ${errors.team1 ? 'border-red-400' : 'border-slate-600'
+                }`}
             />
             {errors.team1 && (
               <p className="mt-1 text-sm text-red-400">{errors.team1}</p>
@@ -231,9 +229,8 @@ export default function RegistrationForm() {
               placeholder="Contoh: 083822743692 & 083822743693 & 083822743694 & 083822743692"
               required
               rows={3}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all resize-none text-slate-200 bg-slate-700/50 backdrop-blur-sm placeholder-slate-400 ${
-                errors.phoneNumbers ? 'border-red-400' : 'border-slate-600'
-              }`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all resize-none text-slate-200 bg-slate-700/50 backdrop-blur-sm placeholder-slate-400 ${errors.phoneNumbers ? 'border-red-400' : 'border-slate-600'
+                }`}
             />
             {errors.phoneNumbers && (
               <p className="mt-1 text-sm text-red-400">{errors.phoneNumbers}</p>
@@ -244,11 +241,10 @@ export default function RegistrationForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-amber-400/50 ${
-              isSubmitting
-                ? 'bg-slate-600 cursor-not-allowed text-slate-400'
-                : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-amber-500/25'
-            }`}
+            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-amber-400/50 ${isSubmitting
+              ? 'bg-slate-600 cursor-not-allowed text-slate-400'
+              : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-amber-500/25'
+              }`}
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-2">
@@ -263,11 +259,10 @@ export default function RegistrationForm() {
 
         {/* Message Display */}
         {message && (
-          <div className={`mt-6 p-4 rounded-lg backdrop-blur-sm ${
-            message.includes('berhasil') 
-              ? 'bg-green-900/50 border border-green-400/50 text-green-300'
-              : 'bg-red-900/50 border border-red-400/50 text-red-300'
-          }`}>
+          <div className={`mt-6 p-4 rounded-lg backdrop-blur-sm ${message.includes('berhasil')
+            ? 'bg-green-900/50 border border-green-400/50 text-green-300'
+            : 'bg-red-900/50 border border-red-400/50 text-red-300'
+            }`}>
             {message}
           </div>
         )}
@@ -277,8 +272,8 @@ export default function RegistrationForm() {
           <p className="text-sm text-slate-400 mb-2">
             📞 Butuh bantuan? Hubungi:
           </p>
-          <a 
-            href="https://wa.me/085624055869"
+          <a
+            href="https://wa.me/+6285624055869"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-slate-200 hover:text-amber-400 transition-colors duration-300 inline-block"

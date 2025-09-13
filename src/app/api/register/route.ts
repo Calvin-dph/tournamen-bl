@@ -22,27 +22,47 @@ function validateRegistrationData(data: unknown): string | null {
   if (!data || typeof data !== 'object') {
     return 'Data tidak valid';
   }
-  
+
   const validData = data as Record<string, unknown>;
-  
+
   if (!validData.bidang || typeof validData.bidang !== 'string') {
     return 'Bidang harus diisi';
   }
-  
+
   if (!validData.team1 || typeof validData.team1 !== 'string') {
     return 'Team 1 harus diisi';
   }
-  
+
+  // Validate team1 format (should contain exactly 2 names separated by &)
+  const team1Parts = validData.team1.trim().split('&');
+  if (team1Parts.length !== 2) {
+    return 'Team 1 harus berisi 2 nama yang dipisahkan dengan &';
+  }
+  if (team1Parts[0].trim() === '' || team1Parts[1].trim() === '') {
+    return 'Team 1 tidak boleh kosong - kedua nama harus diisi';
+  }
+
+  // Validate team2 if provided (should contain exactly 2 names separated by &)
+  if (validData.team2 && typeof validData.team2 === 'string' && validData.team2.trim() !== '') {
+    const team2Parts = validData.team2.trim().split('&');
+    if (team2Parts.length !== 2) {
+      return 'Team 2 harus berisi 2 nama yang dipisahkan dengan &';
+    }
+    if (team2Parts[0].trim() === '' || team2Parts[1].trim() === '') {
+      return 'Team 2 tidak boleh kosong - kedua nama harus diisi';
+    }
+  }
+
   if (!validData.phoneNumbers || typeof validData.phoneNumbers !== 'string') {
     return 'Nomor handphone harus diisi';
   }
-  
+
   // Validate phone numbers format (should contain numbers and &)
   const phonePattern = /^[\d\s&+()-]+$/;
   if (!phonePattern.test(validData.phoneNumbers)) {
     return 'Format nomor handphone tidak valid';
   }
-  
+
   return null;
 }
 
@@ -58,7 +78,7 @@ function sanitizeData(data: RegistrationData): RegistrationData {
 async function submitToGoogleForm(data: RegistrationData): Promise<boolean> {
   try {
     const formData = new FormData();
-    
+
     // Map our data to Google Form entry IDs (matching the curl format)
     formData.append(FORM_FIELDS.bidang, data.bidang);
     formData.append(FORM_FIELDS.team1, data.team1);
@@ -85,7 +105,7 @@ export async function POST(request: Request) {
   try {
     // Parse request body
     const body = await request.json();
-    
+
     // Validate request data
     const validationError = validateRegistrationData(body);
     if (validationError) {
@@ -94,20 +114,20 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Sanitize data
     const sanitizedData = sanitizeData(body);
-    
+
     // Submit to Google Form
     const submitted = await submitToGoogleForm(sanitizedData);
-    
+
     if (!submitted) {
       return NextResponse.json(
         { error: 'Gagal mengirim data pendaftaran. Silakan coba lagi.' },
         { status: 500 }
       );
     }
-    
+
     // Log registration for monitoring
     console.log('New registration submitted to Google Form:', {
       bidang: sanitizedData.bidang,
@@ -115,16 +135,16 @@ export async function POST(request: Request) {
       team2: sanitizedData.team2,
       timestamp: new Date().toISOString(),
     });
-    
+
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         message: 'Pendaftaran berhasil dikirim ke Google Form!',
         timestamp: new Date().toISOString()
       },
       { status: 201 }
     );
-    
+
   } catch (error) {
     console.error('Registration API error:', error);
     return NextResponse.json(
@@ -142,7 +162,7 @@ export async function GET() {
       googleFormUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSdJNoRz1vlNlj9x1PC_gO0JCWdM6YcD1wBpOrlU8TKu2DEMMA/viewform',
       timestamp: new Date().toISOString(),
     });
-    
+
   } catch (error) {
     console.error('Get API error:', error);
     return NextResponse.json(

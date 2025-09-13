@@ -6,8 +6,8 @@ export default function SuccessPage() {
       {/* Spotlight Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-400/10 rounded-full blur-3xl"></div>
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl"></div>
-      
-      <div className="w-full max-w-[420px] mx-auto bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700/50 relative z-10">
+
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700/50 relative z-10">
         {/* Success Header */}
         <div className="bg-gradient-to-br from-green-500 via-green-600 to-emerald-700 text-white p-8 text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-cyan-400/20 via-transparent to-transparent"></div>
@@ -42,8 +42,22 @@ export default function SuccessPage() {
             <div className="text-sm text-slate-300 space-y-1">
               <p><strong>Tanggal:</strong> 13 - 18 Oktober 2025</p>
               <p><strong>Waktu:</strong> 18.00 - 20.00 WIB</p>
-              <p><strong>Lokasi:</strong> Greenlight Cafe & Billiard</p>
-              <p><strong>Alamat:</strong> Jl. Purnawarman No.3, Bandung</p>
+              <p><strong>Lokasi:</strong> <a 
+                href="https://maps.app.goo.gl/72h8Q2hkXQbp4LQy8" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-amber-300 hover:text-amber-400 transition-colors underline decoration-dotted underline-offset-2"
+              >
+                Greenlight Cafe & Billiard
+              </a></p>
+              <p><strong>Alamat:</strong> <a 
+                href="https://maps.app.goo.gl/72h8Q2hkXQbp4LQy8" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-amber-300 hover:text-amber-400 transition-colors underline decoration-dotted underline-offset-2"
+              >
+                Jl. Purnawarman No.3, Bandung
+              </a></p>
             </div>
           </div>
 
@@ -52,7 +66,7 @@ export default function SuccessPage() {
             <p className="text-sm text-slate-400 mb-2">
               📞 Butuh bantuan? Hubungi:
             </p>
-            <a 
+            <a
               href="https://wa.me/+6285624055869"
               target="_blank"
               rel="noopener noreferrer"
@@ -66,12 +80,12 @@ export default function SuccessPage() {
           <div className="space-y-6">
             <div className="mb-2">
               <Link href="/">
-              <button className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 py-3 px-6 rounded-lg font-bold hover:from-amber-600 hover:to-amber-700 transition-all border border-amber-400/50">
+                <button className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 py-3 px-6 rounded-lg font-bold hover:from-amber-600 hover:to-amber-700 transition-all border border-amber-400/50">
                   🏠 Kembali ke Halaman Utama
-              </button>
+                </button>
               </Link>
             </div>
-            
+
             <Link href="/register">
               <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg font-bold hover:from-blue-700 hover:to-blue-800 transition-all border border-blue-500/50">
                 ➕ Daftar Tim Lain
