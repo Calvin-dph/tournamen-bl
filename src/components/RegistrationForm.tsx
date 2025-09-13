@@ -271,7 +271,7 @@ export default function RegistrationForm() {
             📞 Butuh bantuan? Hubungi:
           </p>
           <a 
-            href="https://wa.me/085624055869"
+            href="https://wa.me/+6285624055869"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-[#2c3e50] hover:text-[#e74c3c] transition-colors duration-300 inline-block"

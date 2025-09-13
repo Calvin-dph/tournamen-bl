@@ -96,7 +96,7 @@ export default function Home() {
           <div className="text-center pt-4 border-t border-[#ecf0f1]">
             <div className="text-xs text-[#7f8c8d] mb-1">Informasi & Pendaftaran:</div>
             <a 
-              href="https://wa.me/085624055869"
+              href="https://wa.me/+6285624055869"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-[#2c3e50] text-sm hover:text-[#e74c3c] transition-colors duration-300 inline-block"
