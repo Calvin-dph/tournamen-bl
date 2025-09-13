@@ -91,15 +91,88 @@
         }
         
         .content {
-            padding: 25px 20px;
+            padding: 20px;
+            flex: 1;
         }
-        
+
+        @media (max-width: 480px) {
+            .poster {
+                max-width: 95vw;
+                max-height: 98vh;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 20px 15px 15px;
+            }
+
+            .title {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .info-item {
+                padding: 10px;
+            }
+
+            .prizes {
+                padding: 15px;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .header {
+                padding: 15px 20px 12px;
+            }
+
+            .logo {
+                width: 50px;
+                height: 50px;
+                margin-bottom: 10px;
+            }
+
+            .logo::after {
+                font-size: 24px;
+            }
+
+            .title {
+                font-size: 20px;
+                margin-bottom: 5px;
+            }
+
+            .subtitle {
+                font-size: 12px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .info-item {
+                padding: 8px;
+                gap: 10px;
+            }
+
+            .prizes {
+                padding: 15px;
+                margin-top: 15px;
+            }
+
+            .registration {
+                padding: 12px;
+                margin-top: 15px;
+            }
+        }
+
         .info-grid {
             display: grid;
             gap: 15px;
             margin-bottom: 20px;
         }
-        
+
         .info-item {
             display: flex;
             align-items: flex-start;
@@ -109,17 +182,17 @@
             border-radius: 10px;
             border-left: 4px solid #e74c3c;
         }
-        
+
         .info-icon {
             font-size: 18px;
             margin-top: 2px;
             min-width: 20px;
         }
-        
+
         .info-text {
             flex: 1;
         }
-        
+
         .info-label {
             font-weight: 600;
             color: #2c3e50;
@@ -128,13 +201,13 @@
             letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
-        
+
         .info-value {
             font-size: 13px;
             color: #34495e;
             line-height: 1.4;
         }
-        
+
         .prizes {
             background: linear-gradient(145deg, #f8f9fa, #e9ecef);
             border-radius: 15px;
@@ -142,7 +215,7 @@
             margin-top: 20px;
             border: 2px solid rgba(231, 76, 60, 0.1);
         }
-        
+
         .prizes-title {
             text-align: center;
             font-weight: 700;
@@ -154,7 +227,7 @@
             justify-content: center;
             gap: 8px;
         }
-        
+
         .prize-item {
             display: flex;
             justify-content: space-between;
@@ -162,24 +235,28 @@
             padding: 8px 0;
             border-bottom: 1px solid rgba(44, 62, 80, 0.1);
         }
-        
+
         .prize-item:last-child {
             border-bottom: none;
         }
-        
+
         .prize-rank {
             font-weight: 600;
             color: #2c3e50;
             font-size: 13px;
         }
-        
+
         .prize-reward {
             font-weight: 500;
             color: #e74c3c;
             font-size: 12px;
             text-align: right;
         }
-        
+
+        .registration-link {
+            text-decoration: none;
+        }
+
         .registration {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
@@ -189,8 +266,24 @@
             margin-top: 20px;
             position: relative;
             overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform: translateY(0);
         }
-        
+
+        .registration:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+            background: linear-gradient(135deg, #c0392b, #a93226);
+        }
+
+        .click-hint {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 5px;
+            font-weight: 400;
+        }
+
         .registration::before {
             content: '';
             position: absolute;
@@ -201,42 +294,42 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             animation: shine 2s infinite;
         }
-        
+
         @keyframes shine {
             0% { left: -100%; }
             100% { left: 100%; }
         }
-        
+
         .registration-title {
             font-weight: 700;
             font-size: 14px;
             margin-bottom: 8px;
         }
-        
+
         .registration-info {
             font-size: 12px;
             opacity: 0.95;
         }
-        
+
         .contact {
             text-align: center;
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #ecf0f1;
         }
-        
+
         .contact-text {
             font-size: 11px;
             color: #7f8c8d;
             margin-bottom: 5px;
         }
-        
+
         .contact-number {
             font-weight: 600;
             color: #2c3e50;
             font-size: 13px;
         }
-        
+
         .decorative-line {
             width: 60px;
             height: 3px;
@@ -247,72 +340,72 @@
     </style>
 </head>
 <body>
-    <div class="poster">
-        <div class="header">
-            <div class="logo"></div>
-            <h1 class="title">TI BILLIARD CUP</h1>
-            <p class="subtitle">2025 • BOLA 8</p>
+<div class="poster">
+    <div class="header">
+        <div class="logo"></div>
+        <h1 class="title">TI BILLIARD CUP</h1>
+        <p class="subtitle">2025 • BOLA 8</p>
+    </div>
+
+    <div class="content">
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-icon">📅</div>
+                <div class="info-text">
+                    <div class="info-label">Tanggal</div>
+                    <div class="info-value">13 - 18 Oktober 2025<br>17.15 - 20.00 WIB</div>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-icon">📍</div>
+                <div class="info-text">
+                    <div class="info-label">Lokasi</div>
+                    <div class="info-value">Greenlight Cafe & Billiard<br>Jl. Purnawarman No.3, Bandung</div>
+                </div>
+            </div>
+
+            <div class="info-item">
+                <div class="info-icon">⚡</div>
+                <div class="info-text">
+                    <div class="info-label">Format</div>
+                    <div class="info-value">Sistem Grup • Setengah Kompetisi<br>Max 2 tim per bidang (4 karyawan)</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="content">
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-icon">📅</div>
-                    <div class="info-text">
-                        <div class="info-label">Tanggal</div>
-                        <div class="info-value">13 - 18 Oktober 2025<br>17.15 - 20.00 WIB</div>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-icon">📍</div>
-                    <div class="info-text">
-                        <div class="info-label">Lokasi</div>
-                        <div class="info-value">Greenlight Cafe & Billiard<br>Jl. Purnawarman No.3, Bandung</div>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-icon">⚡</div>
-                    <div class="info-text">
-                        <div class="info-label">Format</div>
-                        <div class="info-value">Sistem Grup • Setengah Kompetisi<br>Max 2 tim per bidang (4 karyawan)</div>
-                    </div>
-                </div>
+
+        <div class="prizes">
+            <h3 class="prizes-title">🏆 HADIAH PEMENANG</h3>
+            <div class="prize-item">
+                <span class="prize-rank">🥇 Juara 1</span>
+                <span class="prize-reward">Rp 500.000 + Piala + Plakat</span>
             </div>
-            
-            <div class="prizes">
-                <h3 class="prizes-title">🏆 HADIAH PEMENANG</h3>
-                <div class="prize-item">
-                    <span class="prize-rank">🥇 Juara 1</span>
-                    <span class="prize-reward">Rp 500.000 + Piala + Plakat</span>
-                </div>
-                <div class="prize-item">
-                    <span class="prize-rank">🥈 Juara 2</span>
-                    <span class="prize-reward">Rp 300.000 + Plakat</span>
-                </div>
-                <div class="prize-item">
-                    <span class="prize-rank">🥉 Juara 3</span>
-                    <span class="prize-reward">Rp 200.000 + Plakat</span>
-                </div>
-                <div class="prize-item">
-                    <span class="prize-rank">🏅 Juara 4 & 5</span>
-                    <span class="prize-reward">Plakat + Sertifikat</span>
-                </div>
+            <div class="prize-item">
+                <span class="prize-rank">🥈 Juara 2</span>
+                <span class="prize-reward">Rp 300.000 + Plakat</span>
             </div>
-            
-            <div class="registration">
-                <div class="registration-title">PENDAFTARAN GRATIS!</div>
-                <div class="registration-info">Tutup: 7 Oktober 2025</div>
+            <div class="prize-item">
+                <span class="prize-rank">🥉 Juara 3</span>
+                <span class="prize-reward">Rp 200.000 + Plakat</span>
             </div>
-            
-            <div class="decorative-line"></div>
-            
-            <div class="contact">
-                <div class="contact-text">Informasi & Pendaftaran:</div>
-                <div class="contact-number">📱 085624055869 (Novi - TI)</div>
+            <div class="prize-item">
+                <span class="prize-rank">🏅 Juara 4 & 5</span>
+                <span class="prize-reward">Plakat + Sertifikat</span>
             </div>
+        </div>
+
+        <div class="registration">
+            <div class="registration-title">PENDAFTARAN GRATIS!</div>
+            <div class="registration-info">Tutup: 7 Oktober 2025</div>
+        </div>
+
+        <div class="decorative-line"></div>
+
+        <div class="contact">
+            <div class="contact-text">Informasi & Pendaftaran:</div>
+            <div class="contact-number">📱 085624055869 (Novi - TI)</div>
         </div>
     </div>
+</div>
 </body>
 </html>
