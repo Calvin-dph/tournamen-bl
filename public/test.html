@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google Form Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #c0392b;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        pre {
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎱 Test Google Form Integration</h1>
+        <p>This page helps you test the Google Form integration for the TI Billiard Cup registration.</p>
+        
+        <div>
+            <h3>Test Options:</h3>
+            <button onclick="testRegistrationAPI()">Test Registration API</button>
+            <button onclick="checkAPIStatus()">Check API Status</button>
+            <button onclick="showGoogleFormInfo()">Show Google Form Info</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+
+        function showResult(title, content, isSuccess = true) {
+            const className = isSuccess ? 'success' : 'error';
+            resultDiv.innerHTML = `
+                <div class="result ${className}">
+                    <h4>${title}</h4>
+                    <pre>${JSON.stringify(content, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        async function testRegistrationAPI() {
+            const testData = {
+                bidang: "Marketing",
+                team1: "John Doe & Jane Smith",
+                team2: "Bob Wilson & Alice Brown",
+                phoneNumbers: "081234567890 & 081234567891"
+            };
+
+            try {
+                showResult('Testing...', 'Sending test data to registration API...');
+                
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData),
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('✅ Registration API Test - SUCCESS', result, true);
+                } else {
+                    showResult('❌ Registration API Test - ERROR', result, false);
+                }
+            } catch (error) {
+                showResult('❌ Network Error', { error: error.message }, false);
+            }
+        }
+
+        async function showGoogleFormInfo() {
+            showResult('📋 Google Form Information', {
+                message: 'Google Form entry IDs have been updated!',
+                currentMappings: [
+                    '✅ phoneNumbers: entry.254771778',
+                    '✅ team2: entry.2130038964', 
+                    '✅ team1: entry.130929675',
+                    '✅ bidang: entry.1805682831',
+                    '✅ Email field removed (no longer required)'
+                ],
+                status: [
+                    '',
+                    '🎉 Integration is ready to test!',
+                    'All required Google Form entry IDs are configured.',
+                    '',
+                    'Form URL:',
+                    'https://docs.google.com/forms/d/e/1FAIpQLSdJNoRz1vlNlj9x1PC_gO0JCWdM6YcD1wBpOrlU8TKu2DEMMA/viewform'
+                ]
+            });
+        }
+
+        async function checkAPIStatus() {
+            try {
+                showResult('Testing...', 'Checking API status...');
+                
+                const response = await fetch('/api/register', {
+                    method: 'GET'
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('✅ API Status - HEALTHY', result, true);
+                } else {
+                    showResult('❌ API Status - ERROR', result, false);
+                }
+            } catch (error) {
+                showResult('❌ API Status - ERROR', { error: error.message }, false);
+            }
+        }
+
+        // Show initial instructions
+        showResult('🚀 Ready to Test', {
+            instructions: [
+                '1. Click "Check API Status" to verify the API is running',
+                '2. Click "Show Google Form Info" for setup instructions',
+                '3. Update Google Form entry IDs in the code',
+                '4. Click "Test Registration API" to test form submission',
+                '',
+                'CORS Note: Direct Google Form testing is blocked by browser security.',
+                'This is normal - the server-side API will handle the submission.'
+            ]
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Poppins', Arial, Helvetica, sans-serif;
+}
+
+/* Custom animations */
+@keyframes float {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+
+  100% {
+    transform: translateX(-10px) translateY(-10px);
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e74c3c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c0392b;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .max-w-6xl {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+}
+
+/* Form input styling to ensure text visibility */
+input,
+textarea,
+select {
+  color: #374151 !important;
+  /* dark gray text */
+  background-color: #ffffff !important;
+  /* white background */
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+  /* gray placeholder */
+}
+
+/* Dark mode form fixes */
+@media (prefers-color-scheme: dark) {
+
+  input,
+  textarea,
+  select {
+    color: #374151 !important;
+    /* keep dark text even in dark mode for better visibility */
+    background-color: #ffffff !important;
+    /* keep white background */
+  }
+}
