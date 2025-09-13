@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "TI Billiard Cup 2025 - Registration",
   description: "Daftar untuk TI Billiard Cup 2025! Tournament billiard internal dengan total hadiah 2.5 juta rupiah. Registrasi ditutup 7 Oktober 2025.",
+  icons: {
+    icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎱</text></svg>",
+  },
 };
 
 export default function RootLayout({
