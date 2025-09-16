@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface FormData {
@@ -16,10 +16,29 @@ interface FormData {
   phoneB2: string;
 }
 
+// Custom debounce hook
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 export default function RegistrationForm() {
   const router = useRouter();
   const [bidangOptions, setBidangOptions] = useState<string[]>([]);
+  const [existingEmails, setExistingEmails] = useState<string[]>([]);
   const [isLoadingBidang, setIsLoadingBidang] = useState(true);
+  const [isLoadingEmails, setIsLoadingEmails] = useState(true);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<'new' | 'existing' | 'error' | null>(null);
   const [existingData, setExistingData] = useState<FormData | null>(null);
@@ -39,70 +58,107 @@ export default function RegistrationForm() {
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  // Fetch bidang options on component mount
+  // Debounce email input
+  const debouncedEmail = useDebounce(formData.email, 500);
+
+  // Check if form fields should be disabled
+  const isFormDisabled = !emailStatus || emailStatus === 'error' || isCheckingEmail;
+
+  // Fetch bidang options and existing emails on component mount
   useEffect(() => {
-    const fetchBidangOptions = async () => {
+    const fetchInitialData = async () => {
       try {
-        setIsLoadingBidang(true);
-        const response = await fetch('/api/bidang-options');
-        
-        if (response.ok) {
-          const data = await response.json();
-          setBidangOptions(data.bidangOptions || []);
+        // Fetch bidang options and existing emails in parallel
+        const [bidangResponse, registrationsResponse] = await Promise.all([
+          fetch('/api/bidang-options'),
+          fetch('/api/registrations')
+        ]);
+
+        if (bidangResponse.ok) {
+          const bidangData = await bidangResponse.json();
+          setBidangOptions(bidangData.options || []);
         } else {
           console.error('Failed to fetch bidang options');
-          // Fallback to empty array, will show "Tidak ada bidang tersedia"
           setBidangOptions([]);
         }
+
+        if (registrationsResponse.ok) {
+          const registrationsData = await registrationsResponse.json();
+          setExistingEmails(registrationsData.registrations.map((e: { email: unknown; }) => e.email) || []);
+        } else {
+          console.error('Failed to fetch registrations');
+          setExistingEmails([]);
+        }
       } catch (error) {
-        console.error('Error fetching bidang options:', error);
+        console.error('Error fetching initial data:', error);
         setBidangOptions([]);
       } finally {
         setIsLoadingBidang(false);
+        setIsLoadingEmails(false);
       }
     };
 
-    fetchBidangOptions();
+    fetchInitialData();
   }, []);
 
-  // Check if email exists and prefill form if it does
-  const checkEmailExists = async (email: string) => {
-    if (!email || !email.includes('@')) return;
-    
-    try {
-      setIsCheckingEmail(true);
+  // Check if email exists using debounced value
+  const checkEmailExists = useCallback(async (email: string) => {
+    // Validate email format first
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailPattern.test(email)) {
       setEmailStatus(null);
-      
-      const response = await fetch('/api/registrations', {
+      setExistingData(null);
+      return;
+    }
+
+    const emailLower = email.toLowerCase().trim();
+
+    setIsCheckingEmail(true);
+    try {
+      const response = await fetch('/api/email-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+        body: JSON.stringify({ email: emailLower }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        
-        if (result.exists && result.data) {
+
+        if (result.exists && result.registration) {
           setEmailStatus('existing');
-          setExistingData(result.data);
-          
+          setExistingData(result.registration);
+
           // Prefill form with existing data
           setFormData(prev => ({
             ...prev,
-            bidang: result.data.bidang || '',
-            teamA1: result.data.teamA1 || '',
-            teamB1: result.data.teamB1 || '',
-            phoneA1: result.data.phoneA1 || '',
-            teamA2: result.data.teamA2 || '',
-            teamB2: result.data.teamB2 || '',
-            phoneA2: result.data.phoneA2 || '',
-            phoneB1: result.data.phoneB1 || '',
+            bidang: result.registration.bidang || '',
+            teamA1: result.registration.teamA1 || '',
+            teamB1: result.registration.teamB1 || '',
+            phoneA1: result.registration.phoneA1 || '',
+            teamA2: result.registration.teamA2 || '',
+            teamB2: result.registration.teamB2 || '',
+            phoneA2: result.registration.phoneA2 || '',
+            phoneB1: result.registration.phoneB1 || '',
+            phoneB2: result.registration.phoneB2 || '',
           }));
         } else {
           setEmailStatus('new');
           setExistingData(null);
+          // Clear all form fields except email when email doesn't exist
+          setFormData(prev => ({
+            ...prev,
+            bidang: '',
+            teamA1: '',
+            teamB1: '',
+            phoneA1: '',
+            teamA2: '',
+            teamB2: '',
+            phoneA2: '',
+            phoneB1: '',
+            phoneB2: '',
+          }));
         }
       } else {
         setEmailStatus('error');
@@ -113,7 +169,21 @@ export default function RegistrationForm() {
     } finally {
       setIsCheckingEmail(false);
     }
-  };
+
+  }, []);
+
+  // Effect to check email when debounced value changes
+  useEffect(() => {
+    // Check if email is valid format before making API calls
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (debouncedEmail && emailPattern.test(debouncedEmail)) {
+      checkEmailExists(debouncedEmail);
+    } else {
+      setEmailStatus(null);
+      setExistingData(null);
+    }
+  }, [debouncedEmail, checkEmailExists]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
@@ -155,7 +225,7 @@ export default function RegistrationForm() {
 
     // Phone number validation
     const phonePattern = /^[\d\s&+()-]+$/;
-    
+
     if (!formData.phoneA1.trim()) {
       newErrors.phoneA1 = 'Nomor handphone A1 harus diisi';
     } else if (!phonePattern.test(formData.phoneA1)) {
@@ -205,20 +275,33 @@ export default function RegistrationForm() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch('/api/registrations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          registrationData: {
+            bidang: formData.bidang,
+            teamA1: formData.teamA1,
+            teamB1: formData.teamB1,
+            phoneA1: formData.phoneA1,
+            teamA2: formData.teamA2,
+            teamB2: formData.teamB2,
+            phoneA2: formData.phoneA2,
+            phoneB1: formData.phoneB1,
+            phoneB2: formData.phoneB2,
+          }
+        }),
       });
 
       const result = await response.json();
 
-      if (response.ok) {
-        const isUpdate = emailStatus === 'existing';
+      if (response.ok && result.success) {
+        const isUpdate = result.action === 'updated';
         setMessage(
-          isUpdate 
+          isUpdate
             ? 'Data berhasil diperbarui! Mengarahkan ke halaman konfirmasi...'
             : 'Pendaftaran berhasil! Mengarahkan ke halaman konfirmasi...'
         );
@@ -237,7 +320,9 @@ export default function RegistrationForm() {
         // Reset email status
         setEmailStatus(null);
         setExistingData(null);
-        router.push('/success');
+        setTimeout(() => {
+          router.push('/success');
+        }, 2000);
       } else {
         setMessage(result.error || 'Terjadi kesalahan saat mendaftar.');
       }
@@ -291,15 +376,15 @@ export default function RegistrationForm() {
             <p><strong>Lokasi:</strong> Greenlight Cafe & Billiard</p>
             <p><strong>Alamat:</strong> Jl. Purnawarman No.3, Bandung</p>
           </div>
-          
+
           {/* Google Maps Embed */}
           <div className="relative w-full h-48 rounded-lg overflow-hidden border border-[#d4af37]/50 mb-2">
-            <iframe 
-              width="100%" 
-              height="100%" 
-              src="https://maps.google.com/maps?q=greenlight+cafe+%26+billiard&t=&z=15&ie=UTF8&iwloc=&output=embed" 
-              frameBorder="0" 
-              scrolling="no" 
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://maps.google.com/maps?q=greenlight+cafe+%26+billiard&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              frameBorder="0"
+              scrolling="no"
               className="w-full h-full"
               title="Lokasi Greenlight Cafe & Billiard"
             ></iframe>
@@ -318,24 +403,30 @@ export default function RegistrationForm() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              onBlur={(e) => checkEmailExists(e.target.value)}
               placeholder="email@example.com"
               required
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.email ? 'border-red-400' : 'border-[#2d3748]'
-                }`}
+              disabled={isLoadingEmails}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.email ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingEmails ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-400">{errors.email}</p>
             )}
-            
+
             {/* Email Status Display */}
+            {isLoadingEmails && (
+              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
+                Memuat data email...
+              </div>
+            )}
+
             {isCheckingEmail && (
               <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
                 Mengecek email...
               </div>
             )}
-            
+
             {emailStatus === 'existing' && existingData && (
               <div className="mt-2 p-3 bg-blue-900/50 border border-blue-400/50 rounded-lg">
                 <p className="text-sm text-blue-300">
@@ -346,7 +437,7 @@ export default function RegistrationForm() {
                 </p>
               </div>
             )}
-            
+
             {emailStatus === 'new' && (
               <div className="mt-2 p-3 bg-green-900/50 border border-green-400/50 rounded-lg">
                 <p className="text-sm text-green-300">
@@ -354,7 +445,7 @@ export default function RegistrationForm() {
                 </p>
               </div>
             )}
-            
+
             {emailStatus === 'error' && (
               <div className="mt-2 p-3 bg-red-900/50 border border-red-400/50 rounded-lg">
                 <p className="text-sm text-red-300">
@@ -362,11 +453,26 @@ export default function RegistrationForm() {
                 </p>
               </div>
             )}
-            
+
             <p className="mt-1 text-xs text-[#a0aec0]">
-              Email akan digunakan sebagai identitas unik untuk pendaftaran. Jika email sudah terdaftar, data akan diperbarui.
+              Email akan digunakan sebagai identitas unik untuk pendaftaran. Email dicek secara otomatis saat Anda mengetik.
             </p>
           </div>
+
+          {/* Form Fields Disabled Message */}
+          {isFormDisabled && (
+            <div className="bg-gradient-to-r from-[#2d3748]/50 to-[#1a2332]/30 border border-[#d4af37]/30 p-4 rounded-lg backdrop-blur-sm">
+              <p className="text-sm text-[#d4af37] flex items-center gap-2">
+                <span>🔒</span>
+                {isCheckingEmail
+                  ? 'Mengecek validitas email...'
+                  : !emailStatus
+                    ? 'Silakan masukkan email yang valid untuk melanjutkan pendaftaran.'
+                    : 'Terjadi kesalahan saat memvalidasi email. Silakan coba lagi.'
+                }
+              </p>
+            </div>
+          )}
 
           {/* Bidang Selection */}
           <div>
@@ -379,8 +485,8 @@ export default function RegistrationForm() {
               value={formData.bidang}
               onChange={handleInputChange}
               required
-              disabled={isLoadingBidang}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.bidang ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingBidang ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isLoadingBidang || isFormDisabled}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.bidang ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingBidang || isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <option value="" className="bg-[#1a2332] text-[#f5f7fa]">
                 {isLoadingBidang ? 'Memuat bidang...' : 'Pilih Bidang'}
@@ -405,7 +511,7 @@ export default function RegistrationForm() {
           {/* Team A1 - Name and Phone */}
           <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/30 to-[#2d3748]/30 rounded-lg border border-[#d4af37]/20">
             <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team A1 (Wajib)</h4>
-            
+
             <div>
               <label htmlFor="teamA1" className="block text-sm font-semibold text-[#d4af37] mb-2">
                 Nama Lengkap <span className="text-[#d4af37]">*</span>
@@ -418,8 +524,8 @@ export default function RegistrationForm() {
                 onChange={handleInputChange}
                 placeholder="Nama lengkap peserta A1"
                 required
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamA1 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamA1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.teamA1 && (
                 <p className="mt-1 text-sm text-red-400">{errors.teamA1}</p>
@@ -438,8 +544,8 @@ export default function RegistrationForm() {
                 onChange={handleInputChange}
                 placeholder="Contoh: 083822743692"
                 required
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneA1 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneA1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.phoneA1 && (
                 <p className="mt-1 text-sm text-red-400">{errors.phoneA1}</p>
@@ -450,7 +556,7 @@ export default function RegistrationForm() {
           {/* Team A2 - Name and Phone */}
           <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/30 to-[#2d3748]/30 rounded-lg border border-[#d4af37]/20">
             <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team A2 (Wajib)</h4>
-            
+
             <div>
               <label htmlFor="teamA2" className="block text-sm font-semibold text-[#d4af37] mb-2">
                 Nama Lengkap <span className="text-[#d4af37]">*</span>
@@ -463,8 +569,8 @@ export default function RegistrationForm() {
                 onChange={handleInputChange}
                 placeholder="Nama lengkap peserta A2"
                 required
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamA2 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamA2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.teamA2 && (
                 <p className="mt-1 text-sm text-red-400">{errors.teamA2}</p>
@@ -483,8 +589,8 @@ export default function RegistrationForm() {
                 onChange={handleInputChange}
                 placeholder="Contoh: 083822743693"
                 required
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneA2 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneA2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.phoneA2 && (
                 <p className="mt-1 text-sm text-red-400">{errors.phoneA2}</p>
@@ -495,7 +601,7 @@ export default function RegistrationForm() {
           {/* Team B1 - Name and Phone */}
           <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/20 to-[#2d3748]/20 rounded-lg border border-[#d4af37]/10">
             <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team B1 (Opsional)</h4>
-            
+
             <div>
               <label htmlFor="teamB1" className="block text-sm font-semibold text-[#d4af37] mb-2">
                 Nama Lengkap <span className="text-[#a0aec0]">(Opsional)</span>
@@ -507,8 +613,8 @@ export default function RegistrationForm() {
                 value={formData.teamB1}
                 onChange={handleInputChange}
                 placeholder="Nama lengkap peserta B1 (opsional)"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamB1 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamB1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.teamB1 && (
                 <p className="mt-1 text-sm text-red-400">{errors.teamB1}</p>
@@ -526,8 +632,8 @@ export default function RegistrationForm() {
                 value={formData.phoneB1}
                 onChange={handleInputChange}
                 placeholder="Contoh: 083822743694 (opsional)"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneB1 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneB1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.phoneB1 && (
                 <p className="mt-1 text-sm text-red-400">{errors.phoneB1}</p>
@@ -538,7 +644,7 @@ export default function RegistrationForm() {
           {/* Team B2 - Name and Phone */}
           <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/20 to-[#2d3748]/20 rounded-lg border border-[#d4af37]/10">
             <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team B2 (Opsional)</h4>
-            
+
             <div>
               <label htmlFor="teamB2" className="block text-sm font-semibold text-[#d4af37] mb-2">
                 Nama Lengkap <span className="text-[#a0aec0]">(Opsional)</span>
@@ -550,8 +656,8 @@ export default function RegistrationForm() {
                 value={formData.teamB2}
                 onChange={handleInputChange}
                 placeholder="Nama lengkap peserta B2 (opsional)"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamB2 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamB2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.teamB2 && (
                 <p className="mt-1 text-sm text-red-400">{errors.teamB2}</p>
@@ -569,8 +675,8 @@ export default function RegistrationForm() {
                 value={formData.phoneB2}
                 onChange={handleInputChange}
                 placeholder="Contoh: 083822743695 (opsional)"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneB2 ? 'border-red-400' : 'border-[#2d3748]'
-                  }`}
+                disabled={isFormDisabled}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneB2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.phoneB2 && (
                 <p className="mt-1 text-sm text-red-400">{errors.phoneB2}</p>
@@ -581,8 +687,8 @@ export default function RegistrationForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-amber-400/50 ${isSubmitting
+            disabled={isSubmitting || isFormDisabled}
+            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-amber-400/50 ${isSubmitting || isFormDisabled
               ? 'bg-[#2d3748] cursor-not-allowed text-[#a0aec0]'
               : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] hover:from-[#b8941f] hover:to-[#9c7b1a] hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-[#d4af37]/25 text-[#1a2332]'
               }`}
@@ -592,6 +698,8 @@ export default function RegistrationForm() {
                 <div className="w-5 h-5 border-2 border-[#2d3748] border-t-transparent rounded-full animate-spin"></div>
                 Memproses...
               </div>
+            ) : isFormDisabled ? (
+              isCheckingEmail ? 'Mengecek Email...' : !emailStatus ? 'Masukkan Email Valid' : 'Email Error'
             ) : (
               emailStatus === 'existing' ? '📝 PERBARUI DATA' : '🚀 DAFTAR SEKARANG'
             )}
