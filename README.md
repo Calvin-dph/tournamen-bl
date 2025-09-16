@@ -99,6 +99,7 @@ View registration summary (for admin purposes).
 
 For registration assistance:
 📱 085624055869 (Novi - TI)
+📱 085189970998 ( Sean - TI )
 
 ## License
 

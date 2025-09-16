@@ -1,21 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 interface RegistrationData {
   bidang: string;
-  team1: string;
-  team2?: string;
-  phoneNumbers: string;
+  teamA1: string;
+  teamA2: string;
+  teamB1?: string;
+  teamB2?: string;
+  phoneA1: string;
+  phoneA2: string;
+  phoneB1?: string;
+  phoneB2?: string;
 }
 
 // Google Form configuration
 const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdJNoRz1vlNlj9x1PC_gO0JCWdM6YcD1wBpOrlU8TKu2DEMMA/formResponse';
 
-// Google Form field mappings - updated with actual entry IDs from the form
+// Google Form field mappings
 const FORM_FIELDS = {
-  phoneNumbers: 'entry.254771778',  // Phone numbers field
-  team2: 'entry.2130038964',        // Team 2 field  
-  team1: 'entry.130929675',         // Team 1 field
-  bidang: 'entry.1805682831',       // Department/Bidang field
+  bidang: 'entry.1805682831',       // Department/Bidang field (Teknologi Informasi)
+  teamA1: 'entry.130929675',        // Team A1 field
+  teamA2: 'entry.335460507',        // Team A2 field  
+  teamB1: 'entry.2130038964',       // Team B1 field
+  teamB2: 'entry.1046935416',       // Team B2 field
+  phoneA1: 'entry.254771778',       // Phone A1 field (nomor a1)
+  phoneA2: 'entry.387092963',       // Phone A2 field (nomor a2)
+  phoneB1: 'entry.1365565988',      // Phone B1 field (nomor b1)
+  phoneB2: 'entry.2143741650',      // Phone B2 field (nomor b2)
 };
 
 function validateRegistrationData(data: unknown): string | null {
@@ -29,38 +39,57 @@ function validateRegistrationData(data: unknown): string | null {
     return 'Bidang harus diisi';
   }
 
-  if (!validData.team1 || typeof validData.team1 !== 'string') {
-    return 'Team 1 harus diisi';
+  if (!validData.teamA1 || typeof validData.teamA1 !== 'string') {
+    return 'Team A1 harus diisi';
   }
 
-  // Validate team1 format (should contain exactly 2 names separated by &)
-  const team1Parts = validData.team1.trim().split('&');
-  if (team1Parts.length !== 2) {
-    return 'Team 1 harus berisi 2 nama yang dipisahkan dengan &';
-  }
-  if (team1Parts[0].trim() === '' || team1Parts[1].trim() === '') {
-    return 'Team 1 tidak boleh kosong - kedua nama harus diisi';
+  if (!validData.teamA2 || typeof validData.teamA2 !== 'string') {
+    return 'Team A2 harus diisi';
   }
 
-  // Validate team2 if provided (should contain exactly 2 names separated by &)
-  if (validData.team2 && typeof validData.team2 === 'string' && validData.team2.trim() !== '') {
-    const team2Parts = validData.team2.trim().split('&');
-    if (team2Parts.length !== 2) {
-      return 'Team 2 harus berisi 2 nama yang dipisahkan dengan &';
+  if (!validData.phoneA1 || typeof validData.phoneA1 !== 'string') {
+    return 'Nomor handphone A1 harus diisi';
+  }
+
+  if (!validData.phoneA2 || typeof validData.phoneA2 !== 'string') {
+    return 'Nomor handphone A2 harus diisi';
+  }
+
+  // Validate phone number format
+  const phonePattern = /^[\d\s+()-]+$/;
+  
+  if (!phonePattern.test(validData.phoneA1)) {
+    return 'Format nomor handphone A1 tidak valid';
+  }
+
+  if (!phonePattern.test(validData.phoneA2)) {
+    return 'Format nomor handphone A2 tidak valid';
+  }
+
+  // Validate optional Team B fields if provided
+  if (validData.teamB1 && typeof validData.teamB1 === 'string' && validData.teamB1.trim() !== '') {
+    if (validData.teamB1.trim().length < 2) {
+      return 'Team B1 harus minimal 2 karakter';
     }
-    if (team2Parts[0].trim() === '' || team2Parts[1].trim() === '') {
-      return 'Team 2 tidak boleh kosong - kedua nama harus diisi';
+  }
+
+  if (validData.teamB2 && typeof validData.teamB2 === 'string' && validData.teamB2.trim() !== '') {
+    if (validData.teamB2.trim().length < 2) {
+      return 'Team B2 harus minimal 2 karakter';
     }
   }
 
-  if (!validData.phoneNumbers || typeof validData.phoneNumbers !== 'string') {
-    return 'Nomor handphone harus diisi';
+  // Validate optional phone B fields if provided
+  if (validData.phoneB1 && typeof validData.phoneB1 === 'string' && validData.phoneB1.trim() !== '') {
+    if (!phonePattern.test(validData.phoneB1)) {
+      return 'Format nomor handphone B1 tidak valid';
+    }
   }
 
-  // Validate phone numbers format (should contain numbers and &)
-  const phonePattern = /^[\d\s&+()-]+$/;
-  if (!phonePattern.test(validData.phoneNumbers)) {
-    return 'Format nomor handphone tidak valid';
+  if (validData.phoneB2 && typeof validData.phoneB2 === 'string' && validData.phoneB2.trim() !== '') {
+    if (!phonePattern.test(validData.phoneB2)) {
+      return 'Format nomor handphone B2 tidak valid';
+    }
   }
 
   return null;
@@ -69,9 +98,14 @@ function validateRegistrationData(data: unknown): string | null {
 function sanitizeData(data: RegistrationData): RegistrationData {
   return {
     bidang: data.bidang.trim(),
-    team1: data.team1.trim(),
-    team2: data.team2?.trim() || '',
-    phoneNumbers: data.phoneNumbers.trim(),
+    teamA1: data.teamA1.trim(),
+    teamA2: data.teamA2.trim(),
+    teamB1: data.teamB1?.trim() || '',
+    teamB2: data.teamB2?.trim() || '',
+    phoneA1: data.phoneA1.trim(),
+    phoneA2: data.phoneA2.trim(),
+    phoneB1: data.phoneB1?.trim() || '',
+    phoneB2: data.phoneB2?.trim() || '',
   };
 }
 
@@ -79,13 +113,26 @@ async function submitToGoogleForm(data: RegistrationData): Promise<boolean> {
   try {
     const formData = new FormData();
 
-    // Map our data to Google Form entry IDs (matching the curl format)
+    // Map our data to Google Form entry IDs
     formData.append(FORM_FIELDS.bidang, data.bidang);
-    formData.append(FORM_FIELDS.team1, data.team1);
-    if (data.team2) {
-      formData.append(FORM_FIELDS.team2, data.team2);
+    formData.append(FORM_FIELDS.teamA1, data.teamA1);
+    formData.append(FORM_FIELDS.teamA2, data.teamA2);
+    formData.append(FORM_FIELDS.phoneA1, data.phoneA1);
+    formData.append(FORM_FIELDS.phoneA2, data.phoneA2);
+    
+    // Optional fields
+    if (data.teamB1) {
+      formData.append(FORM_FIELDS.teamB1, data.teamB1);
     }
-    formData.append(FORM_FIELDS.phoneNumbers, data.phoneNumbers);
+    if (data.teamB2) {
+      formData.append(FORM_FIELDS.teamB2, data.teamB2);
+    }
+    if (data.phoneB1) {
+      formData.append(FORM_FIELDS.phoneB1, data.phoneB1);
+    }
+    if (data.phoneB2) {
+      formData.append(FORM_FIELDS.phoneB2, data.phoneB2);
+    }
 
     const response = await fetch(GOOGLE_FORM_URL, {
       method: 'POST',
@@ -131,8 +178,10 @@ export async function POST(request: Request) {
     // Log registration for monitoring
     console.log('New registration submitted to Google Form:', {
       bidang: sanitizedData.bidang,
-      team1: sanitizedData.team1,
-      team2: sanitizedData.team2,
+      teamA1: sanitizedData.teamA1,
+      teamA2: sanitizedData.teamA2,
+      teamB1: sanitizedData.teamB1,
+      teamB2: sanitizedData.teamB2,
       timestamp: new Date().toISOString(),
     });
 

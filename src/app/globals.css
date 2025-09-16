@@ -2,14 +2,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f7fa;
+  /* Soft Gray */
+  --foreground: #2d3748;
+  /* Charcoal */
+  --primary: #1a2332;
+  /* Deep Navy */
+  --secondary: #f5f7fa;
+  /* Soft Gray */
+  --accent: #d4af37;
+  /* Gold */
+  --text: #2d3748;
+  /* Charcoal */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a2332;
+    /* Deep Navy for dark background */
+    --foreground: #f5f7fa;
+    /* Soft Gray for dark text */
+    --primary: #1a2332;
+    /* Deep Navy */
+    --secondary: #2d3748;
+    /* Charcoal as secondary in dark */
+    --accent: #d4af37;
+    /* Gold */
+    --text: #f5f7fa;
+    /* Soft Gray for text in dark mode */
   }
 }
 
@@ -66,17 +86,20 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #2d3748;
+  /* Charcoal */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #f59e0b;
+  background: #d4af37;
+  /* Gold */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #d97706;
+  background: #b8941f;
+  /* Darker gold */
 }
 
 /* Responsive design improvements */
@@ -91,25 +114,33 @@ body {
 .dark-form input,
 .dark-form textarea,
 .dark-form select {
-  color: #e2e8f0 !important;
-  background-color: rgba(51, 65, 85, 0.5) !important;
-  border-color: #475569 !important;
+  color: #f5f7fa !important;
+  /* Soft Gray */
+  background-color: rgba(45, 55, 72, 0.5) !important;
+  /* Charcoal with transparency */
+  border-color: #2d3748 !important;
+  /* Charcoal */
 }
 
 .dark-form input::placeholder,
 .dark-form textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #a0aec0 !important;
+  /* Lighter gray for placeholders */
 }
 
 .dark-form input:focus,
 .dark-form textarea:focus,
 .dark-form select:focus {
-  border-color: #f59e0b !important;
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+  border-color: #d4af37 !important;
+  /* Gold */
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+  /* Gold shadow */
 }
 
 /* Option styling for dark select */
 .dark-form select option {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
+  background-color: #1a2332 !important;
+  /* Deep Navy */
+  color: #f5f7fa !important;
+  /* Soft Gray */
 }
