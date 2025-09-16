@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface FormData {
-  email: string;
   bidang: string;
   teamA1: string;
   teamA2: string;
@@ -36,14 +35,13 @@ const useDebounce = (value: string, delay: number) => {
 export default function RegistrationForm() {
   const router = useRouter();
   const [bidangOptions, setBidangOptions] = useState<string[]>([]);
-  const [existingEmails, setExistingEmails] = useState<string[]>([]);
+  const [existingBidangs, setExistingBidangs] = useState<string[]>([]);
   const [isLoadingBidang, setIsLoadingBidang] = useState(true);
-  const [isLoadingEmails, setIsLoadingEmails] = useState(true);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<'new' | 'existing' | 'error' | null>(null);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(true);
+  const [isCheckingBidang, setIsCheckingBidang] = useState(false);
+  const [bidangStatus, setBidangStatus] = useState<'new' | 'existing' | 'error' | null>(null);
   const [existingData, setExistingData] = useState<FormData | null>(null);
   const [formData, setFormData] = useState<FormData>({
-    email: '',
     bidang: '',
     teamA1: '',
     teamA2: '',
@@ -58,17 +56,17 @@ export default function RegistrationForm() {
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  // Debounce email input
-  const debouncedEmail = useDebounce(formData.email, 500);
+  // Debounce bidang input (for when bidang changes)
+  const debouncedBidang = useDebounce(formData.bidang, 500);
 
   // Check if form fields should be disabled
-  const isFormDisabled = !emailStatus || emailStatus === 'error' || isCheckingEmail;
+  const isFormDisabled = !bidangStatus || bidangStatus === 'error' || isCheckingBidang;
 
-  // Fetch bidang options and existing emails on component mount
+  // Fetch bidang options and existing registrations on component mount
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Fetch bidang options and existing emails in parallel
+        // Fetch bidang options and existing registrations in parallel
         const [bidangResponse, registrationsResponse] = await Promise.all([
           fetch('/api/bidang-options'),
           fetch('/api/registrations')
@@ -84,119 +82,113 @@ export default function RegistrationForm() {
 
         if (registrationsResponse.ok) {
           const registrationsData = await registrationsResponse.json();
-          setExistingEmails(registrationsData.registrations.map((e: { email: unknown; }) => e.email) || []);
+          setExistingBidangs(registrationsData.registrations.map((r: { bidang: unknown; }) => r.bidang) || []);
         } else {
           console.error('Failed to fetch registrations');
-          setExistingEmails([]);
+          setExistingBidangs([]);
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
         setBidangOptions([]);
       } finally {
         setIsLoadingBidang(false);
-        setIsLoadingEmails(false);
+        setIsLoadingRegistrations(false);
       }
     };
 
     fetchInitialData();
   }, []);
 
-  // Check if email exists using debounced value
-  const checkEmailExists = useCallback(async (email: string) => {
-    // Validate email format first
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailPattern.test(email)) {
-      setEmailStatus(null);
+  // Check if bidang already has registration
+  const checkBidangExists = useCallback(async (bidang: string) => {
+    if (!bidang.trim()) {
+      setBidangStatus(null);
       setExistingData(null);
       return;
     }
 
-    const emailLower = email.toLowerCase().trim();
+    // First check client-side cache
+    if (existingBidangs.includes(bidang)) {
+      setIsCheckingBidang(true);
+      try {
+        const response = await fetch(`/api/registrations?bidang=${encodeURIComponent(bidang)}`, {
+          method: 'GET',
+        });
 
-    setIsCheckingEmail(true);
-    try {
-      const response = await fetch('/api/email-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: emailLower }),
-      });
+        if (response.ok) {
+          const result = await response.json();
 
-      if (response.ok) {
-        const result = await response.json();
+          if (result.registration) {
+            setBidangStatus('existing');
+            setExistingData(result.registration);
 
-        if (result.exists && result.registration) {
-          setEmailStatus('existing');
-          setExistingData(result.registration);
-
-          // Prefill form with existing data
-          setFormData(prev => ({
-            ...prev,
-            bidang: result.registration.bidang || '',
-            teamA1: result.registration.teamA1 || '',
-            teamB1: result.registration.teamB1 || '',
-            phoneA1: result.registration.phoneA1 || '',
-            teamA2: result.registration.teamA2 || '',
-            teamB2: result.registration.teamB2 || '',
-            phoneA2: result.registration.phoneA2 || '',
-            phoneB1: result.registration.phoneB1 || '',
-            phoneB2: result.registration.phoneB2 || '',
-          }));
+            // Prefill form with existing data
+            setFormData(prev => ({
+              ...prev,
+              teamA1: result.registration.teamA1 || '',
+              teamA2: result.registration.teamA2 || '',
+              teamB1: result.registration.teamB1 || '',
+              teamB2: result.registration.teamB2 || '',
+              phoneA1: result.registration.phoneA1 || '',
+              phoneA2: result.registration.phoneA2 || '',
+              phoneB1: result.registration.phoneB1 || '',
+              phoneB2: result.registration.phoneB2 || '',
+            }));
+          } else {
+            setBidangStatus('new');
+            setExistingData(null);
+            // Clear all form fields except bidang when no existing registration
+            setFormData(prev => ({
+              ...prev,
+              teamA1: '',
+              teamA2: '',
+              teamB1: '',
+              teamB2: '',
+              phoneA1: '',
+              phoneA2: '',
+              phoneB1: '',
+              phoneB2: '',
+            }));
+          }
         } else {
-          setEmailStatus('new');
-          setExistingData(null);
-          // Clear all form fields except email when email doesn't exist
-          setFormData(prev => ({
-            ...prev,
-            bidang: '',
-            teamA1: '',
-            teamB1: '',
-            phoneA1: '',
-            teamA2: '',
-            teamB2: '',
-            phoneA2: '',
-            phoneB1: '',
-            phoneB2: '',
-          }));
+          setBidangStatus('error');
         }
-      } else {
-        setEmailStatus('error');
+      } catch (error) {
+        console.error('Error checking bidang:', error);
+        setBidangStatus('error');
+      } finally {
+        setIsCheckingBidang(false);
       }
-    } catch (error) {
-      console.error('Error checking email:', error);
-      setEmailStatus('error');
-    } finally {
-      setIsCheckingEmail(false);
-    }
-
-  }, []);
-
-  // Effect to check email when debounced value changes
-  useEffect(() => {
-    // Check if email is valid format before making API calls
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (debouncedEmail && emailPattern.test(debouncedEmail)) {
-      checkEmailExists(debouncedEmail);
     } else {
-      setEmailStatus(null);
+      // Bidang not in cache, mark as new and clear all fields except bidang
+      setBidangStatus('new');
+      setExistingData(null);
+      setFormData(prev => ({
+        ...prev,
+        teamA1: '',
+        teamA2: '',
+        teamB1: '',
+        teamB2: '',
+        phoneA1: '',
+        phoneA2: '',
+        phoneB1: '',
+        phoneB2: '',
+      }));
+    }
+  }, [existingBidangs]);
+
+  // Effect to check bidang when debounced value changes
+  useEffect(() => {
+    if (debouncedBidang && debouncedBidang.trim()) {
+      checkBidangExists(debouncedBidang);
+    } else {
+      setBidangStatus(null);
       setExistingData(null);
     }
-  }, [debouncedEmail, checkEmailExists]);
+  }, [debouncedBidang, checkBidangExists]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
-
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email harus diisi';
-    } else {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(formData.email)) {
-        newErrors.email = 'Format email tidak valid';
-      }
-    }
 
     if (!formData.bidang.trim()) {
       newErrors.bidang = 'Bidang harus dipilih';
@@ -281,14 +273,13 @@ export default function RegistrationForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
+          bidang: formData.bidang,
           registrationData: {
-            bidang: formData.bidang,
             teamA1: formData.teamA1,
-            teamB1: formData.teamB1,
-            phoneA1: formData.phoneA1,
             teamA2: formData.teamA2,
+            teamB1: formData.teamB1,
             teamB2: formData.teamB2,
+            phoneA1: formData.phoneA1,
             phoneA2: formData.phoneA2,
             phoneB1: formData.phoneB1,
             phoneB2: formData.phoneB2,
@@ -306,7 +297,6 @@ export default function RegistrationForm() {
             : 'Pendaftaran berhasil! Mengarahkan ke halaman konfirmasi...'
         );
         setFormData({
-          email: '',
           bidang: '',
           teamA1: '',
           teamA2: '',
@@ -317,8 +307,8 @@ export default function RegistrationForm() {
           phoneB1: '',
           phoneB2: '',
         });
-        // Reset email status
-        setEmailStatus(null);
+        // Reset bidang status
+        setBidangStatus(null);
         setExistingData(null);
         setTimeout(() => {
           router.push('/success');
@@ -358,6 +348,7 @@ export default function RegistrationForm() {
           <h3 className="font-semibold text-[#d4af37] mb-2">📋 Petunjuk Pendaftaran:</h3>
           <ul className="text-sm text-[#f5f7fa] space-y-1">
             <li>• Pilih bidang Anda dari dropdown menu yang tersedia</li>
+            <li>• <strong>Setiap bidang hanya boleh memiliki satu tim pendaftar</strong></li>
             <li>• <strong>Wajib diisi:</strong> Team A1 & A2 beserta nomor handphone masing-masing</li>
             <li>• <strong>Opsional:</strong> Team B1 & B2 beserta nomor handphone (jika ada peserta tambahan)</li>
             <li>• Maksimal 4 peserta per bidang (2 wajib + 2 opsional)</li>
@@ -392,88 +383,6 @@ export default function RegistrationForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email Field */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-[#d4af37] mb-2">
-              Email <span className="text-[#d4af37]">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="email@example.com"
-              required
-              disabled={isLoadingEmails}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.email ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingEmails ? 'opacity-50 cursor-not-allowed' : ''}`}
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-            )}
-
-            {/* Email Status Display */}
-            {isLoadingEmails && (
-              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
-                Memuat data email...
-              </div>
-            )}
-
-            {isCheckingEmail && (
-              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
-                Mengecek email...
-              </div>
-            )}
-
-            {emailStatus === 'existing' && existingData && (
-              <div className="mt-2 p-3 bg-blue-900/50 border border-blue-400/50 rounded-lg">
-                <p className="text-sm text-blue-300">
-                  ✅ Email sudah terdaftar! Data yang tersimpan telah dimuat ke form.
-                </p>
-                <p className="text-xs text-blue-400 mt-1">
-                  Anda dapat memperbarui informasi dan menyimpan perubahan.
-                </p>
-              </div>
-            )}
-
-            {emailStatus === 'new' && (
-              <div className="mt-2 p-3 bg-green-900/50 border border-green-400/50 rounded-lg">
-                <p className="text-sm text-green-300">
-                  🆕 Email belum terdaftar. Silakan isi form untuk pendaftaran baru.
-                </p>
-              </div>
-            )}
-
-            {emailStatus === 'error' && (
-              <div className="mt-2 p-3 bg-red-900/50 border border-red-400/50 rounded-lg">
-                <p className="text-sm text-red-300">
-                  ❌ Terjadi kesalahan saat mengecek email. Silakan coba lagi.
-                </p>
-              </div>
-            )}
-
-            <p className="mt-1 text-xs text-[#a0aec0]">
-              Email akan digunakan sebagai identitas unik untuk pendaftaran. Email dicek secara otomatis saat Anda mengetik.
-            </p>
-          </div>
-
-          {/* Form Fields Disabled Message */}
-          {isFormDisabled && (
-            <div className="bg-gradient-to-r from-[#2d3748]/50 to-[#1a2332]/30 border border-[#d4af37]/30 p-4 rounded-lg backdrop-blur-sm">
-              <p className="text-sm text-[#d4af37] flex items-center gap-2">
-                <span>🔒</span>
-                {isCheckingEmail
-                  ? 'Mengecek validitas email...'
-                  : !emailStatus
-                    ? 'Silakan masukkan email yang valid untuk melanjutkan pendaftaran.'
-                    : 'Terjadi kesalahan saat memvalidasi email. Silakan coba lagi.'
-                }
-              </p>
-            </div>
-          )}
-
           {/* Bidang Selection */}
           <div>
             <label htmlFor="bidang" className="block text-sm font-semibold text-[#d4af37] mb-2">
@@ -485,8 +394,8 @@ export default function RegistrationForm() {
               value={formData.bidang}
               onChange={handleInputChange}
               required
-              disabled={isLoadingBidang || isFormDisabled}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.bidang ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingBidang || isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isLoadingBidang}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.bidang ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingBidang ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <option value="" className="bg-[#1a2332] text-[#f5f7fa]">
                 {isLoadingBidang ? 'Memuat bidang...' : 'Pilih Bidang'}
@@ -506,7 +415,68 @@ export default function RegistrationForm() {
             {errors.bidang && (
               <p className="mt-1 text-sm text-red-400">{errors.bidang}</p>
             )}
+
+            {/* Bidang Status Display */}
+            {isLoadingRegistrations && (
+              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
+                Memuat data pendaftaran...
+              </div>
+            )}
+
+            {isCheckingBidang && (
+              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
+                Mengecek bidang...
+              </div>
+            )}
+
+            {bidangStatus === 'existing' && existingData && (
+              <div className="mt-2 p-3 bg-blue-900/50 border border-blue-400/50 rounded-lg">
+                <p className="text-sm text-blue-300">
+                  ✅ Bidang sudah terdaftar! Data yang tersimpan telah dimuat ke form.
+                </p>
+                <p className="text-xs text-blue-400 mt-1">
+                  Anda dapat memperbarui informasi tim dan menyimpan perubahan.
+                </p>
+              </div>
+            )}
+
+            {bidangStatus === 'new' && (
+              <div className="mt-2 p-3 bg-green-900/50 border border-green-400/50 rounded-lg">
+                <p className="text-sm text-green-300">
+                  🆕 Bidang belum terdaftar. Silakan isi form untuk pendaftaran baru.
+                </p>
+              </div>
+            )}
+
+            {bidangStatus === 'error' && (
+              <div className="mt-2 p-3 bg-red-900/50 border border-red-400/50 rounded-lg">
+                <p className="text-sm text-red-300">
+                  ❌ Terjadi kesalahan saat mengecek bidang. Silakan coba lagi.
+                </p>
+              </div>
+            )}
+
+            <p className="mt-1 text-xs text-[#a0aec0]">
+              Bidang akan digunakan sebagai identitas unik untuk pendaftaran. Setiap bidang hanya dapat memiliki satu tim.
+            </p>
           </div>
+
+          {/* Form Fields Disabled Message */}
+          {isFormDisabled && (
+            <div className="bg-gradient-to-r from-[#2d3748]/50 to-[#1a2332]/30 border border-[#d4af37]/30 p-4 rounded-lg backdrop-blur-sm">
+              <p className="text-sm text-[#d4af37] flex items-center gap-2">
+                <span>🔒</span>
+                {isCheckingBidang
+                  ? 'Mengecek validitas bidang...'
+                  : !bidangStatus
+                    ? 'Silakan pilih bidang untuk melanjutkan pendaftaran.'
+                    : 'Terjadi kesalahan saat memvalidasi bidang. Silakan coba lagi.'
+                }
+              </p>
+            </div>
+          )}
 
           {/* Team A1 - Name and Phone */}
           <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/30 to-[#2d3748]/30 rounded-lg border border-[#d4af37]/20">
@@ -699,9 +669,9 @@ export default function RegistrationForm() {
                 Memproses...
               </div>
             ) : isFormDisabled ? (
-              isCheckingEmail ? 'Mengecek Email...' : !emailStatus ? 'Masukkan Email Valid' : 'Email Error'
+              isCheckingBidang ? 'Mengecek Bidang...' : !bidangStatus ? 'Pilih Bidang' : 'Bidang Error'
             ) : (
-              emailStatus === 'existing' ? '📝 PERBARUI DATA' : '🚀 DAFTAR SEKARANG'
+              bidangStatus === 'existing' ? '📝 PERBARUI DATA' : '🚀 DAFTAR SEKARANG'
             )}
           </button>
         </form>
