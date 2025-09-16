@@ -36,7 +36,6 @@ const useDebounce = (value: string, delay: number) => {
 export default function RegistrationForm() {
   const router = useRouter();
   const [bidangOptions, setBidangOptions] = useState<string[]>([]);
-  const [existingEmails, setExistingEmails] = useState<string[]>([]);
   const [isLoadingBidang, setIsLoadingBidang] = useState(true);
   const [isLoadingEmails, setIsLoadingEmails] = useState(true);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -69,9 +68,8 @@ export default function RegistrationForm() {
     const fetchInitialData = async () => {
       try {
         // Fetch bidang options and existing emails in parallel
-        const [bidangResponse, registrationsResponse] = await Promise.all([
+        const [bidangResponse] = await Promise.all([
           fetch('/api/bidang-options'),
-          fetch('/api/registrations')
         ]);
 
         if (bidangResponse.ok) {
@@ -82,13 +80,6 @@ export default function RegistrationForm() {
           setBidangOptions([]);
         }
 
-        if (registrationsResponse.ok) {
-          const registrationsData = await registrationsResponse.json();
-          setExistingEmails(registrationsData.registrations.map((e: { email: unknown; }) => e.email) || []);
-        } else {
-          console.error('Failed to fetch registrations');
-          setExistingEmails([]);
-        }
       } catch (error) {
         console.error('Error fetching initial data:', error);
         setBidangOptions([]);
