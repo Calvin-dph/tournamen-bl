@@ -1,32 +1,22 @@
 import { NextResponse } from 'next/server';
 
 interface RegistrationData {
+  timestamp?: string;
+  email: string;
   bidang: string;
   teamA1: string;
-  teamA2: string;
   teamB1?: string;
-  teamB2?: string;
   phoneA1: string;
+  teamA2: string;
+  teamB2?: string;
   phoneA2: string;
   phoneB1?: string;
-  phoneB2?: string;
 }
 
-// Google Form configuration
-const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdJNoRz1vlNlj9x1PC_gO0JCWdM6YcD1wBpOrlU8TKu2DEMMA/formResponse';
-
-// Google Form field mappings
-const FORM_FIELDS = {
-  bidang: 'entry.1805682831',       // Department/Bidang field (Teknologi Informasi)
-  teamA1: 'entry.130929675',        // Team A1 field
-  teamA2: 'entry.335460507',        // Team A2 field  
-  teamB1: 'entry.2130038964',       // Team B1 field
-  teamB2: 'entry.1046935416',       // Team B2 field
-  phoneA1: 'entry.254771778',       // Phone A1 field (nomor a1)
-  phoneA2: 'entry.387092963',       // Phone A2 field (nomor a2)
-  phoneB1: 'entry.1365565988',      // Phone B1 field (nomor b1)
-  phoneB2: 'entry.2143741650',      // Phone B2 field (nomor b2)
-};
+// Google Sheets API configuration
+const SPREADSHEET_ID = '1nKMVP2UqA-61JC97dcHB4yy1EkQdXE0RYiH3iHGdtXY';
+const API_KEY = '';
+const BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
 
 function validateRegistrationData(data: unknown): string | null {
   if (!data || typeof data !== 'object') {
@@ -34,6 +24,16 @@ function validateRegistrationData(data: unknown): string | null {
   }
 
   const validData = data as Record<string, unknown>;
+
+  // Email validation
+  if (!validData.email || typeof validData.email !== 'string') {
+    return 'Email harus diisi';
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(validData.email)) {
+    return 'Format email tidak valid';
+  }
 
   if (!validData.bidang || typeof validData.bidang !== 'string') {
     return 'Bidang harus diisi';
@@ -97,53 +97,110 @@ function validateRegistrationData(data: unknown): string | null {
 
 function sanitizeData(data: RegistrationData): RegistrationData {
   return {
+    email: data.email.trim().toLowerCase(),
     bidang: data.bidang.trim(),
     teamA1: data.teamA1.trim(),
-    teamA2: data.teamA2.trim(),
     teamB1: data.teamB1?.trim() || '',
-    teamB2: data.teamB2?.trim() || '',
     phoneA1: data.phoneA1.trim(),
+    teamA2: data.teamA2.trim(),
+    teamB2: data.teamB2?.trim() || '',
     phoneA2: data.phoneA2.trim(),
     phoneB1: data.phoneB1?.trim() || '',
-    phoneB2: data.phoneB2?.trim() || '',
   };
 }
 
-async function submitToGoogleForm(data: RegistrationData): Promise<boolean> {
+async function checkEmailExists(email: string): Promise<{ exists: boolean; rowIndex?: number }> {
   try {
-    const formData = new FormData();
+    const response = await fetch(`${BASE_URL}/values/Pendaftaran%20TI%20Billiard%20CUP!A:J?key=${API_KEY}`);
+    const data = await response.json();
 
-    // Map our data to Google Form entry IDs
-    formData.append(FORM_FIELDS.bidang, data.bidang);
-    formData.append(FORM_FIELDS.teamA1, data.teamA1);
-    formData.append(FORM_FIELDS.teamA2, data.teamA2);
-    formData.append(FORM_FIELDS.phoneA1, data.phoneA1);
-    formData.append(FORM_FIELDS.phoneA2, data.phoneA2);
-    
-    // Optional fields
-    if (data.teamB1) {
-      formData.append(FORM_FIELDS.teamB1, data.teamB1);
-    }
-    if (data.teamB2) {
-      formData.append(FORM_FIELDS.teamB2, data.teamB2);
-    }
-    if (data.phoneB1) {
-      formData.append(FORM_FIELDS.phoneB1, data.phoneB1);
-    }
-    if (data.phoneB2) {
-      formData.append(FORM_FIELDS.phoneB2, data.phoneB2);
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Failed to check email');
     }
 
-    const response = await fetch(GOOGLE_FORM_URL, {
+    if (data.values && data.values.length > 1) {
+      const existingIndex = data.values.findIndex((row: string[], index: number) => 
+        index > 0 && row[1] && row[1].toLowerCase() === email.toLowerCase() // Email is in column B (index 1)
+      );
+
+      if (existingIndex > 0) {
+        return { exists: true, rowIndex: existingIndex + 1 }; // +1 because findIndex is 0-based but we need 1-based for sheets
+      }
+    }
+
+    return { exists: false };
+  } catch (error) {
+    console.error('Error checking email:', error);
+    throw error;
+  }
+}
+
+async function appendNewRow(data: RegistrationData): Promise<boolean> {
+  try {
+    const values = [[
+      new Date().toISOString(), // Timestamp (Column A)
+      data.email,               // Email (Column B)
+      data.bidang,              // Bidang (Column C)
+      data.teamA1,              // Team A1 (Column D)
+      data.teamB1,              // Team B1 (Column E)
+      data.phoneA1,             // Phone A1 (Column F)
+      data.teamA2,              // Team A2 (Column G)
+      data.teamB2,              // Team B2 (Column H)
+      data.phoneA2,             // Phone A2 (Column I)
+      data.phoneB1              // Phone B1 (Column J)
+    ]];
+
+    const response = await fetch(`${BASE_URL}/values/Pendaftaran%20TI%20Billiard%20CUP!A:J:append?valueInputOption=USER_ENTERED&key=${API_KEY}`, {
       method: 'POST',
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values }),
     });
 
-    // Google Forms typically returns 200 even for successful submissions
-    // Check for redirect or success indicators
-    return response.status === 200 || response.status === 302;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to append new row');
+    }
+
+    return true;
   } catch (error) {
-    console.error('Error submitting to Google Form:', error);
+    console.error('Error appending new row:', error);
+    return false;
+  }
+}
+
+async function updateExistingRow(data: RegistrationData, rowIndex: number): Promise<boolean> {
+  try {
+    const values = [[
+      new Date().toISOString(), // Timestamp (Column A) - update timestamp
+      data.email,               // Email (Column B)
+      data.bidang,              // Bidang (Column C)
+      data.teamA1,              // Team A1 (Column D)
+      data.teamB1,              // Team B1 (Column E)
+      data.phoneA1,             // Phone A1 (Column F)
+      data.teamA2,              // Team A2 (Column G)
+      data.teamB2,              // Team B2 (Column H)
+      data.phoneA2,             // Phone A2 (Column I)
+      data.phoneB1              // Phone B1 (Column J)
+    ]];
+
+    const response = await fetch(`${BASE_URL}/values/Pendaftaran%20TI%20Billiard%20CUP!A${rowIndex}:J${rowIndex}?valueInputOption=USER_ENTERED&key=${API_KEY}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to update existing row');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error updating existing row:', error);
     return false;
   }
 }
@@ -165,33 +222,49 @@ export async function POST(request: Request) {
     // Sanitize data
     const sanitizedData = sanitizeData(body);
 
-    // Submit to Google Form
-    const submitted = await submitToGoogleForm(sanitizedData);
+    // Check if email already exists
+    const emailCheck = await checkEmailExists(sanitizedData.email);
+    
+    let success = false;
+    let isUpdate = false;
 
-    if (!submitted) {
+    if (emailCheck.exists && emailCheck.rowIndex) {
+      // Update existing row
+      success = await updateExistingRow(sanitizedData, emailCheck.rowIndex);
+      isUpdate = true;
+    } else {
+      // Append new row
+      success = await appendNewRow(sanitizedData);
+      isUpdate = false;
+    }
+
+    if (!success) {
       return NextResponse.json(
-        { error: 'Gagal mengirim data pendaftaran. Silakan coba lagi.' },
+        { error: `Gagal ${isUpdate ? 'memperbarui' : 'menyimpan'} data pendaftaran. Silakan coba lagi.` },
         { status: 500 }
       );
     }
 
     // Log registration for monitoring
-    console.log('New registration submitted to Google Form:', {
+    console.log(`${isUpdate ? 'Updated' : 'New'} registration submitted to Google Sheets:`, {
+      email: sanitizedData.email,
       bidang: sanitizedData.bidang,
       teamA1: sanitizedData.teamA1,
       teamA2: sanitizedData.teamA2,
       teamB1: sanitizedData.teamB1,
       teamB2: sanitizedData.teamB2,
       timestamp: new Date().toISOString(),
+      isUpdate,
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Pendaftaran berhasil dikirim ke Google Form!',
+        message: `Pendaftaran berhasil ${isUpdate ? 'diperbarui' : 'disimpan'} ke Google Sheets!`,
+        isUpdate,
         timestamp: new Date().toISOString()
       },
-      { status: 201 }
+      { status: isUpdate ? 200 : 201 }
     );
 
   } catch (error) {
@@ -207,8 +280,8 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     return NextResponse.json({
-      message: 'Registration API is working. Data is submitted to Google Forms.',
-      googleFormUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSdJNoRz1vlNlj9x1PC_gO0JCWdM6YcD1wBpOrlU8TKu2DEMMA/viewform',
+      message: 'Registration API is working. Data is submitted to Google Sheets.',
+      spreadsheetId: SPREADSHEET_ID,
       timestamp: new Date().toISOString(),
     });
 
