@@ -15,7 +15,20 @@ export default function RegisterPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332] p-5 relative overflow-hidden">
+    <div className="min-h-screen p-5 relative overflow-hidden">
+      {/* Background Image with Blur */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/bg.png)',
+          filter: 'blur(8px)',
+          transform: 'scale(1.1)', // Slightly scale to avoid blur edge artifacts
+        }}
+      ></div>
+      
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332]/80 via-[#2d3748]/70 to-[#1a2332]/80"></div>
+      
       {/* Spotlight Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#d4af37]/10 rounded-full blur-3xl"></div>
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl"></div>
@@ -83,20 +96,20 @@ export default function RegisterPage() {
                   <p className="text-sm text-slate-400 mb-3">📞 Butuh informasi? Hubungi:</p>
                   <div className="space-y-2">
                     <a
+                      href="https://wa.me/+6285189970998"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-slate-200 hover:text-amber-400 transition-colors duration-300 block"
+                    >
+                      📱 085189970998 (Michael Sean - TI)
+                    </a>
+                    <a
                       href="https://wa.me/+6285624055869"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-semibold text-slate-200 hover:text-amber-400 transition-colors duration-300 block"
                     >
                       📱 085624055869 (Novi - TI)
-                    </a>
-                    <a
-                      href="https://wa.me/+6285189970998"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-slate-200 hover:text-amber-400 transition-colors duration-300 block"
-                    >
-                      📱 085189970998 ( Sean - TI )
                     </a>
                   </div>
                 </div>

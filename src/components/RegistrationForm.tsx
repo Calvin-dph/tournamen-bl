@@ -463,20 +463,20 @@ export default function RegistrationForm() {
           </p>
           <div className="space-y-2">
             <a
+              href="https://wa.me/+6285189970998"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
+            >
+              📱 085189970998 (Michael Sean - TI)
+            </a>
+            <a
               href="https://wa.me/+6285624055869"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
             >
               📱 085624055869 (Novi - TI)
-            </a>
-            <a
-              href="https://wa.me/+6285189970998"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
-            >
-              📱 085189970998 ( Sean - TI )
             </a>
           </div>
         </div>

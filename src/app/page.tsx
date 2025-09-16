@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
   const [isRegistrationClosed, setIsRegistrationClosed] = useState(false);
@@ -11,10 +11,22 @@ export default function Home() {
     const currentDate = new Date();
     const closingDate = new Date('2025-10-07T23:59:59');
     setIsRegistrationClosed(currentDate > closingDate);
-  }, []);
+
+  }, [isRegistrationClosed]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332] flex justify-center items-center p-5 relative overflow-hidden">
+    <div className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden">
+      {/* Background Image with Blur */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/bg.png)',
+        }}
+      ></div>
+      
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332]/80 via-[#2d3748]/70 to-[#1a2332]/80"></div>
+      
       {/* Spotlight Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#d4af37]/10 rounded-full blur-3xl"></div>
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl"></div>
@@ -152,6 +164,23 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Special Award - Supporter Teramai */}
+              <div className="bg-gradient-to-r from-[#ef4444]/15 via-[#dc2626]/10 to-[#b91c1c]/15 p-4 rounded-xl border border-[#ef4444]/40 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📣</div>
+                    <div>
+                      <div className="font-bold text-[#ef4444] text-base">SUPPORTER TERAMAI</div>
+                      <div className="text-[#f5f7fa] text-sm opacity-90">Reward Khusus Suporter</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-[#f5f7fa] text-lg">Rp 100.000</div>
+                    <div className="text-[#ef4444] text-xs">+ Sertifikat</div>
+                  </div>
+                </div>
+              </div>
+
               {/* Additional benefits */}
               <div className="text-center p-4 bg-gradient-to-r from-[#d4af37]/10 via-[#d4af37]/5 to-[#d4af37]/10 rounded-lg border border-[#d4af37]/20">
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -159,7 +188,7 @@ export default function Home() {
                   <span className="font-bold text-[#d4af37] text-base">BONUS UNTUK SEMUA PEMENANG</span>
                 </div>
                 <div className="text-[#f5f7fa] text-sm">
-                  <span className="font-semibold">Sertifikat Partisipasi</span> • <span className="font-semibold">Plakat Kenang-kenangan</span>
+                  <span className="font-semibold">Sertifikat Partisipasi</span> • <span className="font-semibold">Plakat</span>
                 </div>
               </div>
             </div>
@@ -232,20 +261,20 @@ export default function Home() {
             <div className="text-xs text-[#d4af37] mb-2 uppercase tracking-wide">Informasi & Pendaftaran:</div>
             <div className="space-y-1">
               <a
+                href="https://wa.me/+6285189970998"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[#f5f7fa] text-sm hover:text-[#d4af37] transition-colors duration-300 block"
+              >
+                📱 085189970998 (Michael Sean - TI)
+              </a>
+              <a
                 href="https://wa.me/+6285624055869"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-[#f5f7fa] text-sm hover:text-[#d4af37] transition-colors duration-300 block"
               >
                 📱 085624055869 (Novi - TI)
-              </a>
-              <a
-                href="https://wa.me/+6285189970998"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-[#f5f7fa] text-sm hover:text-[#d4af37] transition-colors duration-300 block"
-              >
-                📱 085189970998 ( Sean - TI )
               </a>
             </div>
           </div>
