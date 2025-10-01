@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TournamentBracket } from '@/components/TournamentBracket'
+import { supabase } from '@/lib/supabase'
 
 
 interface Tournament {
@@ -68,7 +69,7 @@ const formatLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   setup: "Preparation",
-  group_stage: "Group Stage", 
+  group_stage: "Group Stage",
   knockout: "Knockout Stage",
   completed: "Completed",
 }
@@ -112,6 +113,105 @@ export default function TournamentDetailPage({ params }: PageProps) {
     fetchTournamentData()
   }, [params])
 
+  // Realtime subscription for matches updates with fallback polling
+  useEffect(() => {
+    let subscription: ReturnType<typeof supabase.channel> | null = null
+    let pollingInterval: NodeJS.Timeout | null = null
+
+    const fetchLatestMatches = async (tournamentId: string) => {
+      try {
+        const { data: latestMatches, error } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('tournament_id', tournamentId)
+
+        if (error) throw error
+
+        if (latestMatches) {
+          setMatches(latestMatches as Match[])
+        }
+      } catch (err) {
+        console.error('Error fetching latest matches:', err)
+      }
+    }
+
+    const setupRealtimeSubscription = async () => {
+      try {
+        const { id } = await params
+
+        // Try to set up realtime subscription first
+        subscription = supabase
+          .channel(`matches_${id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'matches',
+              filter: `tournament_id=eq.${id}`,
+            },
+            (payload) => {
+              if (payload.eventType === 'INSERT') {
+                // Add new match
+                setMatches(prev => [...prev, payload.new as Match])
+              } else if (payload.eventType === 'UPDATE') {
+                // Update existing match
+                setMatches(prev =>
+                  prev.map(match =>
+                    match.id === payload.new.id
+                      ? { ...match, ...payload.new } as Match
+                      : match
+                  )
+                )
+              } else if (payload.eventType === 'DELETE') {
+                // Remove deleted match
+                setMatches(prev =>
+                  prev.filter(match => match.id !== payload.old.id)
+                )
+              }
+            }
+          )
+          .subscribe((status) => {
+            // If realtime fails, fall back to polling
+            if (status === 'SUBSCRIBED') {
+
+              if (pollingInterval) {
+                clearInterval(pollingInterval)
+                pollingInterval = null
+              }
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              // Set up polling as fallback (every 5 seconds)
+              pollingInterval = setInterval(() => {
+                fetchLatestMatches(id)
+              }, 5000)
+            }
+          })
+      } catch (err) {
+        console.error('Error setting up realtime subscription:', err)
+        // Fall back to polling if realtime setup fails
+        const { id } = await params
+        pollingInterval = setInterval(() => {
+          fetchLatestMatches(id)
+        }, 5000)
+      }
+    }
+
+    // Only setup subscription after tournament data is loaded
+    if (tournament?.id) {
+      setupRealtimeSubscription()
+    }
+
+    // Cleanup subscription and polling on unmount
+    return () => {
+      if (subscription) {
+        supabase.removeChannel(subscription)
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+      }
+    }
+  }, [params, tournament?.id])
+
   // Process group matches and standings
   const groupMatches = matches.filter(match => match.match_type === 'group')
   const knockoutMatches = matches
@@ -130,8 +230,8 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
   // Calculate group standings
   const calculateGroupStandings = (groupName: string): GroupStanding[] => {
-    const groupTeams = teams.filter(team => 
-      groupMatches.some(match => 
+    const groupTeams = teams.filter(team =>
+      groupMatches.some(match =>
         (match.team1_id === team.id || match.team2_id === team.id) &&
         match.round_name === groupName
       )
@@ -150,7 +250,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
       points: 0,
     }))
 
-    const relevantMatches = groupMatches.filter(match => 
+    const relevantMatches = groupMatches.filter(match =>
       match.round_name === groupName && match.status === 'completed'
     )
 
@@ -228,8 +328,8 @@ export default function TournamentDetailPage({ params }: PageProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332]">
       <div className="container mx-auto max-w-6xl space-y-8 py-10 px-4">
         {/* Navigation */}
-        <Link 
-          href="/tournament" 
+        <Link
+          href="/tournament"
           className="text-sm text-[#d4af37] hover:text-[#f5f7fa] transition-colors inline-flex items-center gap-2"
         >
           ← Back to tournaments
@@ -329,15 +429,15 @@ export default function TournamentDetailPage({ params }: PageProps) {
               {groups.map((groupName) => {
                 const standings = calculateGroupStandings(groupName!)
                 const groupMatchList = groupMatches.filter(match => match.round_name === groupName)
-                
+
                 return (
                   <Card key={groupName} className="bg-[#2d3748]/60 border-[#d4af37]/30">
                     <CardHeader>
                       <CardTitle className="text-[#f5f7fa] flex items-center justify-between">
                         <span>
-                            {groupName
-                                ? groupName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-                                : 'Group'}
+                          {groupName
+                            ? groupName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                            : 'Group'}
                         </span>
                         <Badge variant="outline" className="text-[#d4af37] border-[#d4af37]/30">
                           {groupMatchList.length} matches
@@ -388,8 +488,8 @@ export default function TournamentDetailPage({ params }: PageProps) {
                             const team1 = teams.find(t => t.id === match.team1_id)
                             const team2 = teams.find(t => t.id === match.team2_id)
                             const isCompleted = match.status === 'completed'
-                            const scoreDisplay = isCompleted && 
-                              typeof match.team1_score === 'number' && 
+                            const scoreDisplay = isCompleted &&
+                              typeof match.team1_score === 'number' &&
                               typeof match.team2_score === 'number'
                               ? `${match.team1_score} - ${match.team2_score}`
                               : match.status === 'in_progress' ? 'Live' : 'Scheduled'
@@ -421,8 +521,8 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
         {/* Knockout Bracket */}
         {knockoutMatches.length > 0 && (
-          <TournamentBracket 
-            matches={knockoutMatches} 
+          <TournamentBracket
+            matches={knockoutMatches}
             title="Knockout Stage"
           />
         )}
@@ -441,16 +541,16 @@ export default function TournamentDetailPage({ params }: PageProps) {
                 </span>
               </div>
               <div className="w-full bg-[#1a2332]/60 rounded-full h-2">
-                <div 
+                <div
                   className="bg-gradient-to-r from-[#d4af37] to-[#b8941f] h-2 rounded-full transition-all duration-500"
-                  style={{ 
-                    width: `${matches.length > 0 ? (matches.filter(m => m.status === 'completed').length / matches.length) * 100 : 0}%` 
+                  style={{
+                    width: `${matches.length > 0 ? (matches.filter(m => m.status === 'completed').length / matches.length) * 100 : 0}%`
                   }}
                 ></div>
               </div>
               <div className="text-center">
                 <span className="text-xs text-[#f5f7fa]/60">
-                  {matches.length > 0 
+                  {matches.length > 0
                     ? `${Math.round((matches.filter(m => m.status === 'completed').length / matches.length) * 100)}% Complete`
                     : 'No matches scheduled'
                   }
