@@ -165,18 +165,18 @@ export async function POST(request: Request) {
     }
 
     // Save to database as well (for admin management)
-    await saveToDatabase({
-      email,
-      bidang,
-      teamA1,
-      phoneA1,
-      teamA2: teamA2 || '',
-      phoneA2: phoneA2 || '',
-      teamB1: teamB1 || '',
-      phoneB1: phoneB1 || '',
-      teamB2: teamB2 || '',
-      phoneB2: phoneB2 || ''
-    }, existingRowIndex ? 'updated' : 'created');
+    // await saveToDatabase({
+    //   email,
+    //   bidang,
+    //   teamA1,
+    //   phoneA1,
+    //   teamA2: teamA2 || '',
+    //   phoneA2: phoneA2 || '',
+    //   teamB1: teamB1 || '',
+    //   phoneB1: phoneB1 || '',
+    //   teamB2: teamB2 || '',
+    //   phoneB2: phoneB2 || ''
+    // }, existingRowIndex ? 'updated' : 'created');
 
     return NextResponse.json({
       success: true,
