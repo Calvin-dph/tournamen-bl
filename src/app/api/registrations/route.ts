@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { supabase } from '@/lib/supabase';
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "YOUR_SPREADSHEET_ID";
 
@@ -163,6 +164,20 @@ export async function POST(request: Request) {
       console.log('Append result:', updateResult.data);
     }
 
+    // Save to database as well (for admin management)
+    // await saveToDatabase({
+    //   email,
+    //   bidang,
+    //   teamA1,
+    //   phoneA1,
+    //   teamA2: teamA2 || '',
+    //   phoneA2: phoneA2 || '',
+    //   teamB1: teamB1 || '',
+    //   phoneB1: phoneB1 || '',
+    //   teamB2: teamB2 || '',
+    //   phoneB2: phoneB2 || ''
+    // }, existingRowIndex ? 'updated' : 'created');
+
     return NextResponse.json({
       success: true,
       action: existingRowIndex ? 'updated' : 'created',
@@ -191,5 +206,69 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to save registration to database
+async function saveToDatabase(registrationData: {
+  email: string;
+  bidang: string;
+  teamA1: string;
+  phoneA1: string;
+  teamA2: string;
+  phoneA2: string;
+  teamB1: string;
+  phoneB1: string;
+  teamB2: string;
+  phoneB2: string;
+}, action: 'created' | 'updated') {
+  try {
+    const dbData = {
+      email: registrationData.email.toLowerCase(),
+      bidang: registrationData.bidang,
+      team_a1: registrationData.teamA1,
+      phone_a1: registrationData.phoneA1,
+      team_a2: registrationData.teamA2 || null,
+      phone_a2: registrationData.phoneA2 || null,
+      team_b1: registrationData.teamB1 || null,
+      phone_b1: registrationData.phoneB1 || null,
+      team_b2: registrationData.teamB2 || null,
+      phone_b2: registrationData.phoneB2 || null,
+      status: 'pending'
+    };
+
+    if (action === 'updated') {
+      // Try to update existing record
+      const { error } = await supabase
+        .from('registrations')
+        .update(dbData)
+        .eq('email', dbData.email)
+        .select()
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // Record doesn't exist, create it
+        const { error: insertError } = await supabase
+          .from('registrations')
+          .insert([dbData]);
+        
+        if (insertError) {
+          console.error('Error inserting to database:', insertError);
+        }
+      } else if (error) {
+        console.error('Error updating database:', error);
+      }
+    } else {
+      // Create new record
+      const { error } = await supabase
+        .from('registrations')
+        .insert([dbData]);
+      
+      if (error) {
+        console.error('Error inserting to database:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error saving to database:', error);
   }
 }
