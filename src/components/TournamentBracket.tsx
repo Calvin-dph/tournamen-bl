@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card'
 interface BracketTeam {
   id: string
   name: string
-  captain: string
 }
 
 interface BracketMatch {

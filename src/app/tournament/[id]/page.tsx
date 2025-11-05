@@ -26,7 +26,6 @@ interface Tournament {
 interface Team {
   id: string
   name: string
-  captain: string
   tournament_id: string
 }
 
@@ -434,7 +433,6 @@ export default function TournamentDetailPage({ params }: PageProps) {
                 {teams.map((team) => (
                   <div key={team.id} className="bg-secondary border border-border rounded-lg p-3">
                     <div className="font-medium text-foreground truncate">{team.name}</div>
-                    <div className="text-sm text-accent mt-1 truncate">Kapten: {team.captain}</div>
                   </div>
                 ))}
               </div>
