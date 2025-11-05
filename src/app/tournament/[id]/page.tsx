@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TournamentBracket } from '@/components/TournamentBracket'
 import { supabase } from '@/lib/supabase'
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 interface Tournament {
@@ -37,6 +38,7 @@ interface Match {
   round_number?: number
   match_number?: number
   status: 'pending' | 'in_progress' | 'completed'
+  scheduled_at?: string
   team1_id?: string
   team2_id?: string
   team1_score?: number
@@ -62,23 +64,23 @@ interface PageProps {
 }
 
 const formatLabels: Record<string, string> = {
-  group_knockout: "Group Stage + Knockout",
-  single_elimination: "Single Elimination",
-  double_elimination: "Double Elimination",
+  group_knockout: "Babak Grup + Knockout",
+  single_elimination: "Eliminasi Tunggal",
+  double_elimination: "Eliminasi Ganda",
 }
 
 const statusLabels: Record<string, string> = {
-  setup: "Preparation",
-  group_stage: "Group Stage",
-  knockout: "Knockout Stage",
-  completed: "Completed",
+  setup: "Persiapan",
+  group_stage: "Babak Grup",
+  knockout: "Babak Knockout",
+  completed: "Selesai",
 }
 
 const statusStyles: Record<string, string> = {
-  setup: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  group_stage: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  knockout: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  completed: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  setup: "bg-accent/15 text-accent border-accent/30",
+  group_stage: "bg-blue-500/15 text-blue-500 border-blue-500/30",
+  knockout: "bg-orange-500/15 text-orange-500 border-orange-500/30",
+  completed: "bg-green-500/15 text-green-500 border-green-500/30",
 }
 
 export default function TournamentDetailPage({ params }: PageProps) {
@@ -100,10 +102,10 @@ export default function TournamentDetailPage({ params }: PageProps) {
           setTeams(data.teams)
           setMatches(data.matches)
         } else {
-          setError('Failed to load tournament data')
+          setError('Gagal memuat data turnamen')
         }
       } catch (err) {
-        setError('Error loading tournament')
+        setError('Error memuat turnamen')
         console.error('Error fetching tournament:', err)
       } finally {
         setLoading(false)
@@ -297,15 +299,28 @@ export default function TournamentDetailPage({ params }: PageProps) {
     })
   }
 
+  // Helper to format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'TBD';
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   // Get unique groups
   const groups = Array.from(new Set(groupMatches.map(match => match.round_name))).filter(Boolean)
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4af37] mx-auto mb-4"></div>
-          <p className="text-[#f5f7fa]">Loading tournament...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-foreground">Memuat turnamen...</p>
         </div>
       </div>
     )
@@ -313,36 +328,42 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
   if (error || !tournament) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-400 mb-4">{error || 'Tournament not found'}</p>
-          <Link href="/tournament" className="text-[#d4af37] hover:text-[#f5f7fa] transition-colors">
-            ← Back to tournaments
+          <p className="text-destructive mb-4">{error || 'Turnamen tidak ditemukan'}</p>
+          <Link href="/tournaments" className="text-accent hover:text-foreground transition-colors">
+            ← Kembali ke turnamen
           </Link>
         </div>
+
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332]">
+    <div className="min-h-screen bg-background px-4 sm:px-6 py-8">
       <div className="container mx-auto max-w-6xl space-y-8 py-10 px-4">
         {/* Navigation */}
-        <Link
-          href="/tournament"
-          className="text-sm text-[#d4af37] hover:text-[#f5f7fa] transition-colors inline-flex items-center gap-2"
-        >
-          ← Back to tournaments
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+
+          <Link
+            href="/tournaments"
+            className="text-sm text-accent hover:text-foreground transition-colors inline-flex items-center gap-2"
+          >
+            ← Kembali ke turnamen
+          </Link>
+          <ThemeToggle />
+
+        </div>
 
         {/* Tournament Header */}
-        <Card className="bg-[#2d3748]/60 border-[#d4af37]/30">
+        <Card className="bg-card border-border">
           <CardHeader className="space-y-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0 flex-1">
-                <CardTitle className="text-2xl md:text-3xl font-bold text-[#f5f7fa] break-words">{tournament.name}</CardTitle>
-                <p className="text-[#d4af37] mt-1 text-sm md:text-base">
-                  {formatLabels[tournament.format] || tournament.format} • {tournament.max_teams} teams max
+                <CardTitle className="text-2xl md:text-3xl font-bold text-foreground break-words">{tournament.name}</CardTitle>
+                <p className="text-accent mt-1 text-sm md:text-base">
+                  {formatLabels[tournament.format] || tournament.format} • Maksimal {tournament.max_teams} tim
                 </p>
               </div>
               <Badge className={`text-sm font-medium flex-shrink-0 ${statusStyles[tournament.status] || ''}`}>
@@ -352,34 +373,34 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
             {/* Tournament Info Grid */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-lg border border-[#d4af37]/20 bg-[#1a2332]/60 p-3 md:p-4">
-                <p className="text-xs uppercase tracking-wide text-[#d4af37] mb-1">Format</p>
-                <p className="text-sm text-[#f5f7fa]">{formatLabels[tournament.format] || tournament.format}</p>
+              <div className="rounded-lg border border-border bg-secondary p-3 md:p-4">
+                <p className="text-xs uppercase tracking-wide text-accent mb-1">Format</p>
+                <p className="text-sm text-foreground">{formatLabels[tournament.format] || tournament.format}</p>
               </div>
-              <div className="rounded-lg border border-[#d4af37]/20 bg-[#1a2332]/60 p-3 md:p-4">
-                <p className="text-xs uppercase tracking-wide text-[#d4af37] mb-1">Teams Registered</p>
-                <p className="text-sm text-[#f5f7fa]">{teams.length} / {tournament.max_teams}</p>
+              <div className="rounded-lg border border-border bg-secondary p-3 md:p-4">
+                <p className="text-xs uppercase tracking-wide text-accent mb-1">Tim Terdaftar</p>
+                <p className="text-sm text-foreground">{teams.length} / {tournament.max_teams}</p>
               </div>
-              <div className="rounded-lg border border-[#d4af37]/20 bg-[#1a2332]/60 p-3 md:p-4 sm:col-span-2 lg:col-span-1">
-                <p className="text-xs uppercase tracking-wide text-[#d4af37] mb-1">Status</p>
-                <p className="text-sm text-[#f5f7fa]">{statusLabels[tournament.status] || tournament.status}</p>
+              <div className="rounded-lg border border-border bg-secondary p-3 md:p-4 sm:col-span-2 lg:col-span-1">
+                <p className="text-xs uppercase tracking-wide text-accent mb-1">Status</p>
+                <p className="text-sm text-foreground">{statusLabels[tournament.status] || tournament.status}</p>
               </div>
             </div>
 
             {/* Additional Info */}
             {(tournament.description || tournament.location || tournament.start_date) && (
-              <div className="space-y-3 pt-4 border-t border-[#d4af37]/20">
+              <div className="space-y-3 pt-4 border-t border-border">
                 {tournament.description && (
-                  <p className="text-sm text-[#f5f7fa]/80">{tournament.description}</p>
+                  <p className="text-sm text-muted-foreground">{tournament.description}</p>
                 )}
                 {tournament.location && (
-                  <div className="flex items-center gap-2 text-sm text-[#f5f7fa]/70">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>📍</span>
                     <span>{tournament.location}</span>
                   </div>
                 )}
                 {tournament.start_date && (
-                  <div className="flex items-center gap-2 text-sm text-[#f5f7fa]/70">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>📅</span>
                     <span>
                       {new Date(tournament.start_date).toLocaleDateString('id-ID', {
@@ -404,16 +425,16 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
         {/* Participants */}
         {teams.length > 0 && (
-          <Card className="bg-[#2d3748]/60 border-[#d4af37]/30">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-lg md:text-xl text-[#f5f7fa]">Participants ({teams.length})</CardTitle>
+              <CardTitle className="text-lg md:text-xl text-foreground">Peserta ({teams.length})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {teams.map((team) => (
-                  <div key={team.id} className="bg-[#1a2332]/60 border border-[#d4af37]/20 rounded-lg p-3">
-                    <div className="font-medium text-[#f5f7fa] truncate">{team.name}</div>
-                    <div className="text-sm text-[#d4af37] mt-1 truncate">Captain: {team.captain}</div>
+                  <div key={team.id} className="bg-secondary border border-border rounded-lg p-3">
+                    <div className="font-medium text-foreground truncate">{team.name}</div>
+                    <div className="text-sm text-accent mt-1 truncate">Kapten: {team.captain}</div>
                   </div>
                 ))}
               </div>
@@ -424,39 +445,38 @@ export default function TournamentDetailPage({ params }: PageProps) {
         {/* Group Stage */}
         {groups.length > 0 && (
           <div className="space-y-6">
-            <h2 className="text-xl md:text-2xl font-bold text-[#f5f7fa]">Group Stage</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Babak Grup</h2>
             <div className="grid gap-4 md:gap-6 xl:grid-cols-2">
               {groups.map((groupName) => {
                 const standings = calculateGroupStandings(groupName!)
                 const groupMatchList = groupMatches.filter(match => match.round_name === groupName)
 
                 return (
-                  <Card key={groupName} className="bg-[#2d3748]/60 border-[#d4af37]/30">
+                  <Card key={groupName} className="bg-card border-border">
                     <CardHeader>
-                      <CardTitle className="text-[#f5f7fa] flex items-center justify-between">
+                      <CardTitle className="text-foreground flex items-center justify-between">
                         <span>
                           {groupName
                             ? groupName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-                            : 'Group'}
+                            : 'Grup'}
                         </span>
-                        <Badge variant="outline" className="text-[#d4af37] border-[#d4af37]/30">
-                          {groupMatchList.length} matches
+                        <Badge variant="outline" className="text-accent border-border">
+                          {groupMatchList.length} pertandingan
                         </Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* Standings */}
                       <div>
-                        <h4 className="text-sm font-semibold text-[#d4af37] mb-2">Standings</h4>
+                        <h4 className="text-sm font-semibold text-accent mb-2">Klasemen</h4>
                         <div className="overflow-x-auto">
                           <Table>
                             <TableHeader>
                               <TableRow>
                                 <TableHead className="w-8">#</TableHead>
-                                <TableHead className="min-w-[120px]">Team</TableHead>
-                                <TableHead className="text-center w-8">P</TableHead>
+                                <TableHead className="min-w-[120px]">Tim</TableHead>
+                                <TableHead className="text-center w-8">M</TableHead>
                                 <TableHead className="text-center w-8">W</TableHead>
-                                <TableHead className="text-center w-8 hidden sm:table-cell">D</TableHead>
                                 <TableHead className="text-center w-8 hidden sm:table-cell">L</TableHead>
                                 <TableHead className="text-center w-8">Pts</TableHead>
                               </TableRow>
@@ -464,15 +484,14 @@ export default function TournamentDetailPage({ params }: PageProps) {
                             <TableBody>
                               {standings.map((standing, index) => (
                                 <TableRow key={standing.teamId}>
-                                  <TableCell className="font-medium text-[#d4af37]">{index + 1}</TableCell>
-                                  <TableCell className="font-medium text-[#f5f7fa]">
+                                  <TableCell className="font-medium text-accent">{index + 1}</TableCell>
+                                  <TableCell className="font-medium text-secondary-foreground">
                                     <div className="truncate max-w-[120px]">{standing.teamName}</div>
                                   </TableCell>
-                                  <TableCell className="text-center text-[#f5f7fa]/70">{standing.played}</TableCell>
-                                  <TableCell className="text-center text-[#f5f7fa]/70">{standing.won}</TableCell>
-                                  <TableCell className="text-center text-[#f5f7fa]/70 hidden sm:table-cell">{standing.drawn}</TableCell>
-                                  <TableCell className="text-center text-[#f5f7fa]/70 hidden sm:table-cell">{standing.lost}</TableCell>
-                                  <TableCell className="text-center font-semibold text-[#d4af37]">{standing.points}</TableCell>
+                                  <TableCell className="text-center text-secondary-foreground/70">{standing.played}</TableCell>
+                                  <TableCell className="text-center text-secondary-foreground/70">{standing.won}</TableCell>
+                                  <TableCell className="text-center text-secondary-foreground/70 hidden sm:table-cell">{standing.lost}</TableCell>
+                                  <TableCell className="text-center font-semibold text-accent">{standing.points}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -482,7 +501,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
                       {/* Matches */}
                       <div>
-                        <h4 className="text-sm font-semibold text-[#d4af37] mb-2">Matches</h4>
+                        <h4 className="text-sm font-semibold text-accent mb-2">Pertandingan</h4>
                         <div className="space-y-2">
                           {groupMatchList.map((match) => {
                             const team1 = teams.find(t => t.id === match.team1_id)
@@ -492,18 +511,18 @@ export default function TournamentDetailPage({ params }: PageProps) {
                               typeof match.team1_score === 'number' &&
                               typeof match.team2_score === 'number'
                               ? `${match.team1_score} - ${match.team2_score}`
-                              : match.status === 'in_progress' ? 'Live' : 'Scheduled'
+                              : match.status === 'in_progress' ? 'Sedang Berlangsung' : match.scheduled_at ? formatDate(match.scheduled_at) : 'Terjadwal'
 
                             return (
-                              <div key={match.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-[#1a2332]/60 border border-[#d4af37]/10 rounded-lg p-3 gap-2">
+                              <div key={match.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-secondary border border-border rounded-lg p-3 gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm text-[#f5f7fa] flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                  <div className="text-sm text-foreground flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                     <span className="font-medium truncate">{team1?.name || 'TBD'}</span>
-                                    <span className="text-[#d4af37] text-xs sm:text-sm">vs</span>
+                                    <span className="text-accent text-xs sm:text-sm">vs</span>
                                     <span className="font-medium truncate">{team2?.name || 'TBD'}</span>
                                   </div>
                                 </div>
-                                <span className={`text-sm flex-shrink-0 ${isCompleted ? 'text-[#d4af37] font-medium' : 'text-[#f5f7fa]/70'}`}>
+                                <span className={`text-sm flex-shrink-0 ${isCompleted ? 'text-accent font-medium' : 'text-muted-foreground'}`}>
                                   {scoreDisplay}
                                 </span>
                               </div>
@@ -523,36 +542,36 @@ export default function TournamentDetailPage({ params }: PageProps) {
         {knockoutMatches.length > 0 && (
           <TournamentBracket
             matches={knockoutMatches}
-            title="Knockout Stage"
+            title="Babak Knockout"
           />
         )}
 
         {/* Tournament Progress */}
-        <Card className="bg-[#2d3748]/60 border-[#d4af37]/30">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-[#f5f7fa]">Tournament Progress</CardTitle>
+            <CardTitle className="text-foreground">Progress Turnamen</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#f5f7fa]/70">Completed Matches</span>
-                <span className="text-[#d4af37] font-medium">
+                <span className="text-muted-foreground">Pertandingan Selesai</span>
+                <span className="text-accent font-medium">
                   {matches.filter(m => m.status === 'completed').length} / {matches.length}
                 </span>
               </div>
-              <div className="w-full bg-[#1a2332]/60 rounded-full h-2">
+              <div className="w-full bg-secondary rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-[#d4af37] to-[#b8941f] h-2 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-[var(--accent-foreground)] to-[var(--accent-foreground)]/80 h-2 rounded-full transition-all duration-500"
                   style={{
                     width: `${matches.length > 0 ? (matches.filter(m => m.status === 'completed').length / matches.length) * 100 : 0}%`
                   }}
                 ></div>
               </div>
               <div className="text-center">
-                <span className="text-xs text-[#f5f7fa]/60">
+                <span className="text-xs text-muted-foreground">
                   {matches.length > 0
-                    ? `${Math.round((matches.filter(m => m.status === 'completed').length / matches.length) * 100)}% Complete`
-                    : 'No matches scheduled'
+                    ? `${Math.round((matches.filter(m => m.status === 'completed').length / matches.length) * 100)}% Selesai`
+                    : 'Tidak ada pertandingan terjadwal'
                   }
                 </span>
               </div>

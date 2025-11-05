@@ -1,131 +1,154 @@
 import { NextResponse } from 'next/server';
-import { google } from 'googleapis';
+import { supabase } from '@/lib/supabase';
 
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "YOUR_SPREADSHEET_ID";
-
-// Google Service Account credentials
-const getGoogleAuth = async () => {
-    const auth = await google.auth.getClient({
-        projectId: process.env.GOOGLE_PROJECT_ID || "YOUR_PROJECT_ID",
-        credentials: {
-            type: "service_account",
-            project_id: process.env.GOOGLE_PROJECT_ID || "YOUR_PROJECT_ID",
-            private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID || "YOUR_PRIVATE_KEY_ID",
-            private_key: (process.env.GOOGLE_PRIVATE_KEY || "YOUR_PRIVATE_KEY").replace(/\\n/g, '\n'),
-            client_email: process.env.GOOGLE_CLIENT_EMAIL || "YOUR_CLIENT_EMAIL",
-            universe_domain: "googleapis.com"
-        },
-        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-
-    return google.sheets({ version: 'v4', auth });
-};
-
-export interface RegistrationData {
-    timestamp: string;
-    email: string;
-    bidang: string;
-    teamA1: string;
-    teamB1: string;
-    phoneA1: string;
-    teamA2: string;
-    teamB2: string;
-    phoneA2: string;
-    phoneB1: string;
-    phoneB2: string;
-    rowIndex: number;
+export interface ExistingRegistrationData {
+  email: string;
+  bidang: string;
+  singleWomanName: string;
+  singleWomanPhone: string;
+  singleManName: string;
+  singleManPhone: string;
+  doublePlayer1Name: string;
+  doublePlayer1Phone: string;
+  doublePlayer2Name: string;
+  doublePlayer2Phone: string;
 }
 
 // GET - Fetch all existing emails for client-side validation
 export async function GET() {
-    try {
-        const sheets = await getGoogleAuth();
+  try {
+    const { data: registrations, error } = await supabase
+      .from('registrations')
+      .select('email')
+      .order('email');
 
-        const response = await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Pendaftaran TI Billiard CUP!B:B', // Only email column
-        });
-
-        const values = response.data.values || [];
-
-        // Extract emails (skip header)
-        const emails = values.slice(1)
-            .map(row => row[0])
-            .filter(email => email && email.trim() !== '')
-            .map(email => email.toLowerCase().trim());
-
-        return NextResponse.json({
-            success: true,
-            emails: [...new Set(emails)] // Remove duplicates
-        });
-    } catch (error) {
-        console.error('Error fetching emails:', error);
-        return NextResponse.json(
-            {
-                success: false,
-                error: 'Failed to fetch emails'
-            },
-            { status: 500 }
-        );
+    if (error) {
+      console.error('Error fetching emails:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Gagal mengambil data email'
+        },
+        { status: 500 }
+      );
     }
+
+    // Extract unique emails
+    const emails = [...new Set(registrations?.map(reg => reg.email.toLowerCase()) || [])];
+
+    return NextResponse.json({
+      success: true,
+      emails
+    });
+  } catch (error) {
+    console.error('Error fetching emails:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Gagal mengambil data email'
+      },
+      { status: 500 }
+    );
+  }
 }
 
 // POST - Check specific email and return full registration data if exists
 export async function POST(request: Request) {
-    try {
-        const { email } = await request.json();
+  try {
+    const { email } = await request.json();
 
-        if (!email) {
-            return NextResponse.json(
-                { success: false, error: 'Email is required' },
-                { status: 400 }
-            );
-        }
-
-        const sheets = await getGoogleAuth();
-
-        const response = await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Pendaftaran TI Billiard CUP!A:K',
-        });
-
-        const values = response.data.values || [];
-
-        let existingRegistration: RegistrationData | null = null;
-        if (values.length > 1) {
-            const registrations = values.slice(1).map((row: string[], index: number) => ({
-                timestamp: row[0] || '',
-                email: row[1] || '',
-                bidang: row[2] || '',
-                teamA1: row[3] || '',
-                phoneA1: row[4] || '',
-                teamA2: row[5] || '',
-                phoneA2: row[6] || '',
-                teamB1: row[7] || '',
-                phoneB1: row[8] || '',
-                teamB2: row[9] || '',
-                phoneB2: row[10] || '',
-                rowIndex: index + 2,
-            }));
-
-            existingRegistration = registrations.find((reg: RegistrationData) =>
-                reg.email.toLowerCase() === email.toLowerCase()
-            ) || null;
-        }
-
-        return NextResponse.json({
-            success: true,
-            exists: !!existingRegistration,
-            registration: existingRegistration
-        });
-    } catch (error) {
-        console.error('Error checking email:', error);
-        return NextResponse.json(
-            {
-                success: false,
-                error: 'Failed to check email'
-            },
-            { status: 500 }
-        );
+    if (!email) {
+      return NextResponse.json(
+        { success: false, error: 'Email is required' },
+        { status: 400 }
+      );
     }
+
+    const emailLower = email.toLowerCase().trim();
+
+    // Fetch all registrations for this email
+    const { data: registrations, error } = await supabase
+      .from('registrations')
+      .select('*')
+      .eq('email', emailLower)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error checking email:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Gagal memeriksa email'
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!registrations || registrations.length === 0) {
+      return NextResponse.json({
+        success: true,
+        exists: false,
+        registration: null
+      });
+    }
+
+    // Convert the separate registration records back to form format
+    // Group by bidang and get the most recent registration for each type
+    const registrationsByBidang: { [key: string]: ExistingRegistrationData } = {};
+
+    registrations.forEach(reg => {
+      if (!registrationsByBidang[reg.bidang]) {
+        registrationsByBidang[reg.bidang] = {
+          email: reg.email,
+          bidang: reg.bidang,
+          singleWomanName: '',
+          singleWomanPhone: '',
+          singleManName: '',
+          singleManPhone: '',
+          doublePlayer1Name: '',
+          doublePlayer1Phone: '',
+          doublePlayer2Name: '',
+          doublePlayer2Phone: '',
+        };
+      }
+
+      const formData = registrationsByBidang[reg.bidang];
+
+      switch (reg.type) {
+        case 'single_women':
+          formData.singleWomanName = reg.player1_name || '';
+          formData.singleWomanPhone = reg.player1_phone || '';
+          break;
+        case 'single_men':
+          formData.singleManName = reg.player1_name || '';
+          formData.singleManPhone = reg.player1_phone || '';
+          break;
+        case 'double':
+          formData.doublePlayer1Name = reg.player1_name || '';
+          formData.doublePlayer1Phone = reg.player1_phone || '';
+          formData.doublePlayer2Name = reg.player2_name || '';
+          formData.doublePlayer2Phone = reg.player2_phone || '';
+          break;
+      }
+    });
+
+    // Return the most recent bidang's data (first in the array since we ordered by created_at desc)
+    const mostRecentBidang = registrations[0].bidang;
+    const existingRegistration = registrationsByBidang[mostRecentBidang];
+
+    return NextResponse.json({
+      success: true,
+      exists: true,
+      registration: existingRegistration
+    });
+  } catch (error) {
+    console.error('Error checking email:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Gagal memeriksa email'
+      },
+      { status: 500 }
+    );
+  }
 }

@@ -69,17 +69,31 @@ export interface Registration {
   id: string
   email: string
   bidang: string
-  team_a1: string
-  phone_a1: string
-  team_a2?: string
-  phone_a2?: string
-  team_b1?: string
-  phone_b1?: string
-  team_b2?: string
-  phone_b2?: string
+  type: 'single_women' | 'single_men' | 'double'
+  player1_name: string
+  player1_phone: string
+  player2_name?: string
+  player2_phone?: string
   status: 'pending' | 'approved' | 'added_to_tournament' | 'rejected'
   tournament_id?: string
   notes?: string
   created_at: string
   updated_at: string
+}
+
+// Form data interface for the registration form
+export interface RegistrationFormData {
+  email: string
+  bidang: string
+  // Single Woman (optional)
+  singleWomanName: string
+  singleWomanPhone: string
+  // Single Man (optional)
+  singleManName: string
+  singleManPhone: string
+  // Double (required)
+  doublePlayer1Name: string
+  doublePlayer1Phone: string
+  doublePlayer2Name: string
+  doublePlayer2Phone: string
 }

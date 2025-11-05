@@ -134,7 +134,7 @@ export default function GroupStageManagement({
       loadGroupData()
     } catch (error) {
       console.error('Error updating match score:', error)
-      alert('Failed to update match score')
+      alert('Gagal memperbarui skor pertandingan')
     }
   }
 
@@ -177,12 +177,12 @@ export default function GroupStageManagement({
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Award className="w-6 h-6" />
-          Group Stage
+          Babak Penyisihan
         </h2>
         {Object.keys(groups).length > 0 && (
           <Button onClick={advanceTopTeams}>
             <Trophy className="w-4 h-4 mr-2" />
-            Advance to Knockout
+            Lanjut ke Knockout
           </Button>
         )}
       </div>
@@ -196,7 +196,7 @@ export default function GroupStageManagement({
             <CardContent>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Teams</h4>
+                  <h4 className="font-semibold">Tim</h4>
                   {groupTeams.map(team => (
                     <div key={team.id} className="p-2 bg-muted rounded text-sm">
                       {team.name}
@@ -205,13 +205,13 @@ export default function GroupStageManagement({
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Standings</h4>
+                  <h4 className="font-semibold">Klasemen</h4>
                   <div className="text-xs space-y-1">
                     <div className="grid grid-cols-4 gap-2 font-medium">
-                      <span>Team</span>
+                      <span>Tim</span>
                       <span>P</span>
-                      <span>W</span>
-                      <span>Pts</span>
+                      <span>M</span>
+                      <span>Poin</span>
                     </div>
                     {standings
                       .filter(s => s.group_name === groupName)
@@ -231,7 +231,7 @@ export default function GroupStageManagement({
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-semibold">Matches</h4>
+                  <h4 className="font-semibold">Pertandingan</h4>
                   {matches
                     .filter(m => {
                       const team1InGroup = groupTeams.some(t => t.id === m.team1_id)

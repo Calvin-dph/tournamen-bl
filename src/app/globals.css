@@ -1,52 +1,182 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --background: #f5f7fa;
-  /* Soft Gray */
-  --foreground: #2d3748;
-  /* Charcoal */
+  /* Light Mode Theme Color Scheme */
+  --background: #ffffff;
+  /* Pure White Background */
+  --foreground: #1f2937;
+  /* Dark Gray Text */
+  --card: #f9fafb;
+  /* Very Light Gray for cards */
+  --card-foreground: #1f2937;
+  /* Dark Gray Text */
   --primary: #1a2332;
   /* Deep Navy */
-  --secondary: #f5f7fa;
-  /* Soft Gray */
+  --primary-foreground: #f9fafb;
+  /* Light Text */
+  --secondary: #f3f4f6;
+  /* Light Gray */
+  --secondary-foreground: #1f2937;
+  /* Dark Gray */
+  --border: #d1d5db;
+  /* Medium Gray border */
+  --input: #ffffff;
+  /* White input */
+  --ring: #d4af37;
+  /* Gold */
+  --muted: #f3f4f6;
+  /* Light muted */
+  --muted-foreground: #6b7280;
+  /* Medium Gray text */
   --accent: #d4af37;
   /* Gold */
-  --text: #2d3748;
-  /* Charcoal */
+  --accent-foreground: #1a2332;
+  /* Deep Navy */
+  --destructive: #ef4444;
+  /* Red for destructive actions */
+  --destructive-foreground: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --radius: 0.5rem;
+
+  /* Chart colors using your theme */
+  --chart-1: #1a2332;
+  /* Deep Navy */
+  --chart-2: #d4af37;
+  /* Gold */
+  --chart-3: #2563eb;
+  /* Blue accent */
+  --chart-4: #059669;
+  /* Green accent */
+  --chart-5: #dc2626;
+  /* Red accent */
+
+  /* Sidebar colors */
+  --sidebar: #1a2332;
+  /* Deep Navy */
+  --sidebar-foreground: #f9fafb;
+  /* Light Text */
+  --sidebar-primary: #d4af37;
+  /* Gold */
+  --sidebar-accent: #334155;
+  /* Darker navy variant */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1a2332;
-    /* Deep Navy for dark background */
-    --foreground: #f5f7fa;
-    /* Soft Gray for dark text */
-    --primary: #1a2332;
-    /* Deep Navy */
-    --secondary: #2d3748;
-    /* Charcoal as secondary in dark */
-    --accent: #d4af37;
-    /* Gold */
-    --text: #f5f7fa;
-    /* Soft Gray for text in dark mode */
-  }
+.dark {
+  /* Dark Mode Theme Color Scheme - Perfect for Billiard Places */
+  --background: #0f0f0f;
+  /* Very Dark Background */
+  --foreground: #e2e8f0;
+  /* Light Gray Text */
+  --card: #1a1a1a;
+  /* Dark Card Background */
+  --card-foreground: #e2e8f0;
+  /* Light Gray Text */
+  --primary: #d4af37;
+  /* Gold - Primary */
+  --primary-foreground: #0f0f0f;
+  /* Dark Text on Gold */
+  --secondary: #262626;
+  /* Dark Secondary */
+  --secondary-foreground: #e2e8f0;
+  /* Light Text */
+  --border: #2a2a2a;
+  /* Dark Border */
+  --input: #1a1a1a;
+  /* Dark Input */
+  --ring: #d4af37;
+  /* Gold Ring */
+  --muted: #1f1f1f;
+  /* Dark Muted */
+  --muted-foreground: #a1a1aa;
+  /* Muted Light Text */
+  --accent: #d4af37;
+  /* Gold Accent */
+  --accent-foreground: #0f0f0f;
+  /* Dark Text on Gold */
+  --destructive: #dc2626;
+  /* Red for destructive actions */
+  --destructive-foreground: #ffffff;
+  --popover: #1a1a1a;
+  /* Dark Popover */
+  --popover-foreground: #e2e8f0;
+  /* Light Text */
+
+  /* Chart colors for dark mode */
+  --chart-1: #d4af37;
+  /* Gold */
+  --chart-2: #f59e0b;
+  /* Amber */
+  --chart-3: #3b82f6;
+  /* Blue */
+  --chart-4: #10b981;
+  /* Emerald */
+  --chart-5: #ef4444;
+  /* Red */
+
+  /* Sidebar colors for dark mode */
+  --sidebar: #0a0a0a;
+  /* Very Dark Sidebar */
+  --sidebar-foreground: #e2e8f0;
+  /* Light Text */
+  --sidebar-primary: #d4af37;
+  /* Gold */
+  --sidebar-accent: #1f1f1f;
+  /* Dark Accent */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Poppins', Arial, Helvetica, sans-serif;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+  line-height: 1.6;
 }
 
 /* Custom animations */
 @keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
   0% {
-    transform: translateX(0) translateY(0);
+    background-position: -1000px 0;
   }
 
   100% {
-    transform: translateX(-10px) translateY(-10px);
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.6);
   }
 }
 
@@ -86,20 +216,18 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #2d3748;
-  /* Charcoal */
+  background: var(--muted);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4af37;
-  /* Gold */
+  background: var(--foreground);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b8941f;
-  /* Darker gold */
+  background: var(--foreground);
+  opacity: 0.8;
 }
 
 /* Responsive design improvements */
@@ -110,39 +238,141 @@ body {
   }
 }
 
-/* Form input styling for dark theme */
-.dark-form input,
-.dark-form textarea,
-.dark-form select {
-  color: #f5f7fa !important;
-  /* Soft Gray */
-  background-color: rgba(45, 55, 72, 0.5) !important;
-  /* Charcoal with transparency */
-  border-color: #2d3748 !important;
-  /* Charcoal */
+/* Form input styling for both light and dark modes */
+.form-input input,
+.form-input textarea,
+.form-input select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
 }
 
-.dark-form input::placeholder,
-.dark-form textarea::placeholder {
-  color: #a0aec0 !important;
-  /* Lighter gray for placeholders */
+.form-input input::placeholder,
+.form-input textarea::placeholder {
+  color: var(--muted-foreground) !important;
 }
 
-.dark-form input:focus,
-.dark-form textarea:focus,
-.dark-form select:focus {
-  border-color: #d4af37 !important;
-  /* Gold */
+.form-input input:focus,
+.form-input textarea:focus,
+.form-input select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
-  /* Gold shadow */
+  background-color: var(--input) !important;
 }
 
-/* Option styling for dark select */
-.dark-form select option {
-  background-color: #1a2332 !important;
-  /* Deep Navy */
-  color: #f5f7fa !important;
-  /* Soft Gray */
+/* Option styling for both light and dark select */
+.form-input select option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+/* Enhanced select styling for better dark mode support */
+select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+select option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
+  background-color: var(--input) !important;
+}
+
+/* Global input, textarea, and select focus styling */
+input:focus,
+textarea:focus,
+select:focus {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+}
+
+/* Light mode specific adjustments */
+:root input,
+:root textarea,
+:root select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+/* Dark mode specific form adjustments */
+.dark .form-input input,
+.dark .form-input textarea,
+.dark .form-input select {
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+}
+
+.dark .form-input input:focus,
+.dark .form-input textarea:focus,
+.dark .form-input select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3) !important;
+  background-color: var(--input) !important;
+}
+
+.dark select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+.dark select option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+.dark select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
+  background-color: var(--input) !important;
+}
+
+/* Dark mode global input fixes */
+.dark input,
+.dark textarea,
+.dark select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+}
+
+/* Placeholder styling for both modes */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+/* Focus placeholder styling */
+input:focus::placeholder,
+textarea:focus::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+.dark input:focus::placeholder,
+.dark textarea:focus::placeholder {
+  color: var(--muted-foreground) !important;
 }
 
 /* Line clamp utilities for text truncation */
@@ -168,4 +398,26 @@ body {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+}
+
+/* Animation classes */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(212, 175, 55, 0.3) 50%,
+      transparent 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 3s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
