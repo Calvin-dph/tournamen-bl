@@ -82,7 +82,7 @@ export default function RegistrationForm() {
   const debouncedBidang = useDebounce(formData.bidang, 500);
 
   // Check if form fields should be disabled
-  const isFormDisabled = isCheckingBidang;
+  const isFormDisabled = isCheckingBidang || formData.bidang.trim() === '';
 
   // Helper functions to check if specific sections are disabled due to existing data
   const isDoubleDisabled = existingData && (
