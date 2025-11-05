@@ -2,28 +2,18 @@ import Link from 'next/link';
 
 export default function SuccessPage() {
   return (
-    <div className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden">
-      {/* Background Image with Blur */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: 'url(/bg.png)',
-          filter: 'blur(8px)',
-          transform: 'scale(1.1)', // Slightly scale to avoid blur edge artifacts
-        }}
-      ></div>
-      
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a2332]/80 via-[#2d3748]/70 to-[#1a2332]/80"></div>
+    <div className="min-h-screen flex justify-center items-center p-5 relative overflow-hidden bg-background">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-card via-secondary to-card"></div>
       
       {/* Spotlight Effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#d4af37]/10 rounded-full blur-3xl"></div>
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl"></div>
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl"></div>
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl"></div>
 
-      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-[#2d3748] to-[#1a2332] rounded-2xl shadow-2xl overflow-hidden border border-[#d4af37]/50 relative z-10">
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-card rounded-2xl shadow-2xl overflow-hidden border border-border relative z-10">
         {/* Success Header */}
-        <div className="bg-gradient-to-br from-green-500 via-green-600 to-emerald-700 text-white p-8 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#d4af37]/20 via-transparent to-transparent"></div>
+        <div className="bg-gradient-to-br from-green-500 via-green-500 to-green-500 text-white p-8 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-green-500/20 via-transparent to-transparent"></div>
           <div className="relative z-10">
             <div className="text-6xl mb-4">✅</div>
             <h1 className="text-3xl font-bold mb-2">Pendaftaran Berhasil!</h1>
@@ -34,13 +24,13 @@ export default function SuccessPage() {
         {/* Success Content */}
         <div className="p-8 text-center">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-[#f5f7fa] mb-4">🎱 Selamat!</h2>
-            <p className="text-[#f5f7fa] mb-4">
+            <h2 className="text-2xl font-bold text-foreground mb-4">🎱 Selamat!</h2>
+            <p className="text-foreground mb-4">
               Tim Anda telah berhasil terdaftar untuk turnamen TI BILLIARD CUP 2025.
             </p>
-            <div className="bg-gradient-to-r from-[#1a2332]/50 to-[#2d3748]/50 border-l-4 border-[#d4af37] p-4 mb-6 text-left backdrop-blur-sm">
-              <h3 className="font-semibold text-[#d4af37] mb-2">📋 Langkah Selanjutnya:</h3>
-              <ul className="text-sm text-[#f5f7fa] space-y-1">
+            <div className="bg-secondary border-l-4 border-accent p-4 mb-6 text-left backdrop-blur-sm">
+              <h3 className="font-semibold text-accent mb-2">📋 Langkah Selanjutnya:</h3>
+              <ul className="text-sm text-foreground space-y-1">
                 <li>• Tim panitia akan menghubungi Anda melalui WhatsApp</li>
                 <li>• Pastikan nomor yang didaftarkan aktif</li>
                 <li>• Tunggu informasi lebih lanjut mengenai jadwal dan teknis turnamen</li>
@@ -50,17 +40,17 @@ export default function SuccessPage() {
           </div>
 
           {/* Tournament Reminder */}
-          <div className="bg-gradient-to-r from-[#2d3748]/50 to-[#1a2332]/30 rounded-xl p-6 mb-6 border border-[#d4af37]/30 backdrop-blur-sm">
-            <h3 className="font-bold text-[#d4af37] mb-3">📅 Reminder Tournament</h3>
-            <div className="text-sm text-[#f5f7fa] space-y-3">
-              <p><strong>Tanggal:</strong> 13 - 18 Oktober 2025</p>
+          <div className="bg-secondary rounded-xl p-6 mb-6 border border-border backdrop-blur-sm">
+            <h3 className="font-bold text-accent mb-3">📅 Reminder Tournament</h3>
+            <div className="text-sm text-foreground space-y-3">
+              <p><strong>Tanggal:</strong> 22 November 2025 - Selesai</p>
               <p><strong>Waktu:</strong> 18.00 - 20.00 WIB</p>
               <p><strong>Lokasi:</strong> Greenlight Cafe & Billiard</p>
               <p><strong>Alamat:</strong> Jl. Purnawarman No.3, Bandung</p>
               
               {/* Google Maps Embed */}
               <div className="mt-4">
-                <div className="relative w-full h-64 rounded-lg overflow-hidden border border-[#d4af37]/50">
+                <div className="relative w-full h-64 rounded-lg overflow-hidden border border-border">
                   <iframe 
                     width="100%" 
                     height="100%" 
@@ -77,7 +67,7 @@ export default function SuccessPage() {
 
           {/* Contact Info */}
           <div className="mb-8">
-            <p className="text-sm text-slate-400 mb-3">
+            <p className="text-sm text-muted-foreground mb-3">
               📞 Butuh bantuan? Hubungi:
             </p>
             <div className="space-y-2">
@@ -85,7 +75,7 @@ export default function SuccessPage() {
                 href="https://wa.me/+6285189970998"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
+                className="font-semibold text-foreground hover:text-accent transition-colors duration-300 block"
               >
                 📱 085189970998 (Michael Sean - TI)
               </a>
@@ -93,7 +83,7 @@ export default function SuccessPage() {
                 href="https://wa.me/+6285624055869"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
+                className="font-semibold text-foreground hover:text-accent transition-colors duration-300 block"
               >
                 📱 085624055869 (Novi - TI)
               </a>
@@ -104,14 +94,14 @@ export default function SuccessPage() {
           <div className="space-y-6">
             <div className="mb-2">
               <Link href="/">
-                <button className="w-full bg-gradient-to-r from-[#d4af37] to-[#b8941f] text-[#1a2332] py-3 px-6 rounded-lg font-bold hover:from-[#b8941f] hover:to-[#9c7b1a] transition-all border border-[#d4af37]/50">
+                <button className="w-full bg-gradient-to-r from-accent to-accent text-primary py-3 px-6 rounded-lg font-bold hover:from-accent hover:to-accent transition-all border border-accent/50">
                   🏠 Kembali ke Halaman Utama
                 </button>
               </Link>
             </div>
 
             <Link href="/register">
-              <button className="w-full bg-gradient-to-r from-[#2d3748] to-[#1a2332] text-[#f5f7fa] py-3 px-6 rounded-lg font-bold hover:from-[#1a2332] hover:to-[#2d3748] transition-all border border-[#d4af37]/50">
+              <button className="w-full bg-gradient-to-r from-foreground to-primary text-secondary-foreground py-3 px-6 rounded-lg font-bold hover:from-primary hover:to-foreground transition-all border border-accent/50">
                 ➕ Daftar Tim Lain
               </button>
             </Link>

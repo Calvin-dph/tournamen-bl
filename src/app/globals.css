@@ -1,52 +1,119 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+  /* Custom Theme Color Scheme */
   --background: #f5f7fa;
   /* Soft Gray */
   --foreground: #2d3748;
   /* Charcoal */
+  --card: #ffffff;
+  /* White for cards */
+  --card-foreground: #2d3748;
+  /* Charcoal */
   --primary: #1a2332;
   /* Deep Navy */
+  --primary-foreground: #f5f7fa;
+  /* Soft Gray */
   --secondary: #f5f7fa;
   /* Soft Gray */
+  --secondary-foreground: #2d3748;
+  /* Charcoal */
+  --border: #e2e8f0;
+  /* Light border */
+  --input: #ffffff;
+  /* White input */
+  --ring: #d4af37;
+  /* Gold */
+  --muted: #f1f5f9;
+  /* Light muted */
+  --muted-foreground: #64748b;
+  /* Muted text */
   --accent: #d4af37;
   /* Gold */
-  --text: #2d3748;
-  /* Charcoal */
-}
+  --accent-foreground: #1a2332;
+  /* Deep Navy */
+  --destructive: #ef4444;
+  /* Red for destructive actions */
+  --destructive-foreground: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #2d3748;
+  --radius: 0.5rem;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1a2332;
-    /* Deep Navy for dark background */
-    --foreground: #f5f7fa;
-    /* Soft Gray for dark text */
-    --primary: #1a2332;
-    /* Deep Navy */
-    --secondary: #2d3748;
-    /* Charcoal as secondary in dark */
-    --accent: #d4af37;
-    /* Gold */
-    --text: #f5f7fa;
-    /* Soft Gray for text in dark mode */
-  }
+  /* Chart colors using your theme */
+  --chart-1: #1a2332;
+  /* Deep Navy */
+  --chart-2: #d4af37;
+  /* Gold */
+  --chart-3: #2563eb;
+  /* Blue accent */
+  --chart-4: #059669;
+  /* Green accent */
+  --chart-5: #dc2626;
+  /* Red accent */
+
+  /* Sidebar colors */
+  --sidebar: #1a2332;
+  /* Deep Navy */
+  --sidebar-foreground: #f5f7fa;
+  /* Soft Gray */
+  --sidebar-primary: #d4af37;
+  /* Gold */
+  --sidebar-accent: #334155;
+  /* Darker navy variant */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Poppins', Arial, Helvetica, sans-serif;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+  line-height: 1.6;
 }
 
 /* Custom animations */
 @keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
   0% {
-    transform: translateX(0) translateY(0);
+    background-position: -1000px 0;
   }
 
   100% {
-    transform: translateX(-10px) translateY(-10px);
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.6);
   }
 }
 
@@ -86,19 +153,19 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #2d3748;
-  /* Charcoal */
+  background: #f5f7fa;
+  /* Soft Gray */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4af37;
+  background: #000;
   /* Gold */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b8941f;
+  background: #000;
   /* Darker gold */
 }
 
@@ -110,39 +177,39 @@ body {
   }
 }
 
-/* Form input styling for dark theme */
-.dark-form input,
-.dark-form textarea,
-.dark-form select {
-  color: #f5f7fa !important;
-  /* Soft Gray */
-  background-color: rgba(45, 55, 72, 0.5) !important;
-  /* Charcoal with transparency */
-  border-color: #2d3748 !important;
+/* Form input styling for light theme */
+.form-input input,
+.form-input textarea,
+.form-input select {
+  color: #2d3748 !important;
   /* Charcoal */
+  background-color: #ffffff !important;
+  /* White */
+  border-color: #e2e8f0 !important;
+  /* Light border */
 }
 
-.dark-form input::placeholder,
-.dark-form textarea::placeholder {
-  color: #a0aec0 !important;
-  /* Lighter gray for placeholders */
+.form-input input::placeholder,
+.form-input textarea::placeholder {
+  color: #64748b !important;
+  /* Muted text */
 }
 
-.dark-form input:focus,
-.dark-form textarea:focus,
-.dark-form select:focus {
+.form-input input:focus,
+.form-input textarea:focus,
+.form-input select:focus {
   border-color: #d4af37 !important;
   /* Gold */
   box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
   /* Gold shadow */
 }
 
-/* Option styling for dark select */
-.dark-form select option {
-  background-color: #1a2332 !important;
-  /* Deep Navy */
-  color: #f5f7fa !important;
-  /* Soft Gray */
+/* Option styling for light select */
+.form-input select option {
+  background-color: #ffffff !important;
+  /* White */
+  color: #2d3748 !important;
+  /* Charcoal */
 }
 
 /* Line clamp utilities for text truncation */
@@ -168,4 +235,26 @@ body {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+}
+
+/* Animation classes */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(212, 175, 55, 0.3) 50%,
+      transparent 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 3s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }

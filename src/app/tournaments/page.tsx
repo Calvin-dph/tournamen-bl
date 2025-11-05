@@ -18,23 +18,23 @@ interface Tournament {
 }
 
 const formatLabels: Record<string, string> = {
-  group_knockout: "Group Stage + Knockout",
-  single_elimination: "Single Elimination",
-  double_elimination: "Double Elimination",
+  group_knockout: "Grup + Knockout",
+  single_elimination: "Eliminasi Tunggal",
+  double_elimination: "Eliminasi Ganda",
 }
 
 const statusLabels: Record<string, string> = {
-  setup: "Preparation",
-  group_stage: "Group Stage",
-  knockout: "Knockout Stage",
-  completed: "Completed",
+  setup: "Persiapan",
+  group_stage: "Babak Grup",
+  knockout: "Babak Knockout",
+  completed: "Selesai",
 }
 
 const statusStyles: Record<string, string> = {
-  setup: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  group_stage: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  knockout: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  completed: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  setup: "bg-accent/15 text-accent border-accent/30",
+  group_stage: "bg-blue-500/15 text-blue-500 border-blue-500/30",
+  knockout: "bg-orange-500/15 text-orange-500 border-orange-500/30",
+  completed: "bg-green-500/15 text-green-500 border-green-500/30",
 }
 
 export default function TournamentsPage() {
@@ -54,10 +54,10 @@ export default function TournamentsPage() {
       if (data.success) {
         setTournaments(data.tournaments)
       } else {
-        setError('Failed to load tournaments')
+        setError('Gagal memuat turnamen')
       }
     } catch (err) {
-      setError('Error loading tournaments')
+      setError('Error memuat turnamen')
       console.error('Error fetching tournaments:', err)
     } finally {
       setLoading(false)
@@ -66,12 +66,12 @@ export default function TournamentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332]">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto max-w-6xl py-10">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4af37] mx-auto mb-4"></div>
-              <p className="text-[#f5f7fa]">Loading tournaments...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+              <p className="text-foreground">Memuat turnamen...</p>
             </div>
           </div>
         </div>
@@ -81,16 +81,16 @@ export default function TournamentsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332]">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto max-w-6xl py-10">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <p className="text-red-400 mb-4">{error}</p>
+              <p className="text-destructive mb-4">{error}</p>
               <button 
                 onClick={fetchTournaments}
-                className="px-4 py-2 bg-[#d4af37] text-[#1a2332] rounded-lg hover:bg-[#b8941f] transition-colors"
+                className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:opacity-90 transition-opacity"
               >
-                Try Again
+                Coba Lagi
               </button>
             </div>
           </div>
@@ -100,30 +100,30 @@ export default function TournamentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332]">
+    <div className="min-h-screen bg-background px-4 sm:px-6 py-8">
       <div className="container mx-auto max-w-6xl py-10 px-4">
         {/* Header */}
         <div className="flex flex-col gap-4 mb-8">
           <Link 
             href="/" 
-            className="text-sm text-[#d4af37] hover:text-[#f5f7fa] transition-colors inline-flex items-center gap-2"
+            className="text-sm text-accent hover:text-foreground transition-colors inline-flex items-center gap-2"
           >
-            ← Back to Home
+            ← Kembali ke Beranda
           </Link>
           
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-[#f5f7fa] mb-2">Active Tournaments</h1>
-            <p className="text-[#d4af37] text-lg">TI Billiard Cup 2025</p>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Turnamen Aktif</h1>
+            <p className="text-accent text-lg">TI Billiard Cup 2025</p>
           </div>
         </div>
 
         {/* Tournaments Grid */}
         {tournaments.length === 0 ? (
-          <Card className="bg-[#2d3748]/60 border-[#d4af37]/30">
+          <Card className="bg-card border-border">
             <CardContent className="flex items-center justify-center h-32">
-              <p className="text-[#f5f7fa] text-center">
-                No active tournaments at the moment.<br />
-                <span className="text-[#d4af37] text-sm">Check back later for updates!</span>
+              <p className="text-foreground text-center">
+                Tidak ada turnamen aktif saat ini.<br />
+                <span className="text-accent text-sm">Cek lagi nanti untuk update!</span>
               </p>
             </CardContent>
           </Card>
@@ -131,10 +131,10 @@ export default function TournamentsPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {tournaments.map((tournament) => (
               <Link key={tournament.id} href={`/tournament/${tournament.id}`}>
-                <Card className="bg-[#2d3748]/60 border-[#d4af37]/30 hover:border-[#d4af37]/60 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-[#d4af37]/15 cursor-pointer">
+                <Card className="bg-card border-border hover:border-accent/60 transition-all hover:scale-105 hover:shadow-2xl hover:shadow-accent/15 cursor-pointer">
                   <CardHeader className="space-y-3">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-xl font-bold text-[#f5f7fa] leading-tight">
+                      <CardTitle className="text-xl font-bold text-foreground leading-tight">
                         {tournament.name}
                       </CardTitle>
                       <Badge className={`text-xs font-medium ${statusStyles[tournament.status] || ''}`}>
@@ -143,31 +143,31 @@ export default function TournamentsPage() {
                     </div>
                     
                     <div className="space-y-2">
-                      <div className="text-sm text-[#d4af37]">
+                      <div className="text-sm text-accent">
                         {formatLabels[tournament.format] || tournament.format}
                       </div>
-                      <div className="text-sm text-[#f5f7fa]/70">
-                        Max {tournament.max_teams} teams
+                      <div className="text-sm text-muted-foreground">
+                        Maks {tournament.max_teams} tim
                       </div>
                     </div>
                   </CardHeader>
                   
                   <CardContent className="space-y-3">
                     {tournament.description && (
-                      <p className="text-sm text-[#f5f7fa]/80 line-clamp-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
                         {tournament.description}
                       </p>
                     )}
                     
                     {tournament.location && (
-                      <div className="flex items-center gap-2 text-sm text-[#f5f7fa]/70">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>📍</span>
                         <span>{tournament.location}</span>
                       </div>
                     )}
                     
                     {tournament.start_date && (
-                      <div className="flex items-center gap-2 text-sm text-[#f5f7fa]/70">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>📅</span>
                         <span>
                           {new Date(tournament.start_date).toLocaleDateString('id-ID', {
@@ -179,9 +179,9 @@ export default function TournamentsPage() {
                       </div>
                     )}
                     
-                    <div className="pt-2 border-t border-[#d4af37]/20">
-                      <span className="text-[#d4af37] text-sm font-medium">
-                        View Details →
+                    <div className="pt-2 border-t border-border">
+                      <span className="text-accent text-sm font-medium">
+                        Lihat Detail →
                       </span>
                     </div>
                   </CardContent>

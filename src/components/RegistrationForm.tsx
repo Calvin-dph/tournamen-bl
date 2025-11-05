@@ -4,16 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface FormData {
-  email: string;
   bidang: string;
-  teamA1: string;
-  teamA2: string;
-  teamB1: string;
-  teamB2: string;
-  phoneA1: string;
-  phoneA2: string;
-  phoneB1: string;
-  phoneB2: string;
+  singleWomanName: string;
+  singleWomanPhone: string;
+  singleManName: string;
+  singleManPhone: string;
+  doublePlayer1Name: string;
+  doublePlayer1Phone: string;
+  doublePlayer2Name: string;
+  doublePlayer2Phone: string;
 }
 
 // Custom debounce hook
@@ -37,41 +36,53 @@ export default function RegistrationForm() {
   const router = useRouter();
   const [bidangOptions, setBidangOptions] = useState<string[]>([]);
   const [isLoadingBidang, setIsLoadingBidang] = useState(true);
-  const [isLoadingEmails, setIsLoadingEmails] = useState(true);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<'new' | 'existing' | 'error' | null>(null);
+  const [isCheckingBidang, setIsCheckingBidang] = useState(false);
   const [existingData, setExistingData] = useState<FormData | null>(null);
   const [formData, setFormData] = useState<FormData>({
-    email: '',
     bidang: '',
-    teamA1: '',
-    teamA2: '',
-    teamB1: '',
-    teamB2: '',
-    phoneA1: '',
-    phoneA2: '',
-    phoneB1: '',
-    phoneB2: '',
+    singleWomanName: '',
+    singleWomanPhone: '',
+    singleManName: '',
+    singleManPhone: '',
+    doublePlayer1Name: '',
+    doublePlayer1Phone: '',
+    doublePlayer2Name: '',
+    doublePlayer2Phone: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  // Debounce email input
-  const debouncedEmail = useDebounce(formData.email, 500);
+  // Debounce bidang input
+  const debouncedBidang = useDebounce(formData.bidang, 500);
 
   // Check if form fields should be disabled
-  const isFormDisabled = !emailStatus || emailStatus === 'error' || isCheckingEmail;
+  const isFormDisabled = isCheckingBidang;
+
+  // Helper functions to check if specific sections are disabled due to existing data
+  const isDoubleDisabled = existingData && (
+    (existingData.doublePlayer1Name ?? '') !== '' || 
+    (existingData.doublePlayer1Phone ?? '') !== '' ||
+    (existingData.doublePlayer2Name ?? '') !== '' || 
+    (existingData.doublePlayer2Phone ?? '') !== ''
+  );
+
+  const isSingleWomanDisabled = existingData && (
+    (existingData.singleWomanName ?? '') !== '' || 
+    (existingData.singleWomanPhone ?? '') !== ''
+  );
+
+  const isSingleManDisabled = existingData && (
+    (existingData.singleManName ?? '') !== '' || 
+    (existingData.singleManPhone ?? '') !== ''
+  );
 
   // Fetch bidang options and existing emails on component mount
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchBidangOptions = async () => {
       try {
-        // Fetch bidang options and existing emails in parallel
-        const [bidangResponse] = await Promise.all([
-          fetch('/api/bidang-options'),
-        ]);
-
+        const bidangResponse = await fetch('/api/bidang-options');
+        
         if (bidangResponse.ok) {
           const bidangData = await bidangResponse.json();
           setBidangOptions(bidangData.options || []);
@@ -79,164 +90,139 @@ export default function RegistrationForm() {
           console.error('Failed to fetch bidang options');
           setBidangOptions([]);
         }
-
       } catch (error) {
-        console.error('Error fetching initial data:', error);
+        console.error('Error fetching bidang options:', error);
         setBidangOptions([]);
       } finally {
         setIsLoadingBidang(false);
-        setIsLoadingEmails(false);
       }
     };
 
-    fetchInitialData();
+    fetchBidangOptions();
   }, []);
 
-  // Check if email exists using debounced value
-  const checkEmailExists = useCallback(async (email: string) => {
-    // Validate email format first
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailPattern.test(email)) {
-      setEmailStatus(null);
+  // Check if bidang exists and has registrations
+  const checkBidangExists = useCallback(async (bidang: string) => {
+    if (!bidang || bidang.trim() === '') {
       setExistingData(null);
       return;
     }
 
-    const emailLower = email.toLowerCase().trim();
-
-    setIsCheckingEmail(true);
+    setIsCheckingBidang(true);
     try {
-      const response = await fetch('/api/email-check', {
+      const response = await fetch('/api/bidang-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: emailLower }),
+        body: JSON.stringify({ bidang: bidang.trim() }),
       });
 
       if (response.ok) {
         const result = await response.json();
 
         if (result.exists && result.registration) {
-          setEmailStatus('existing');
           setExistingData(result.registration);
-
           // Prefill form with existing data
           setFormData(prev => ({
             ...prev,
-            bidang: result.registration.bidang || '',
-            teamA1: result.registration.teamA1 || '',
-            teamB1: result.registration.teamB1 || '',
-            phoneA1: result.registration.phoneA1 || '',
-            teamA2: result.registration.teamA2 || '',
-            teamB2: result.registration.teamB2 || '',
-            phoneA2: result.registration.phoneA2 || '',
-            phoneB1: result.registration.phoneB1 || '',
-            phoneB2: result.registration.phoneB2 || '',
+            singleWomanName: result.registration.singleWomanName || '',
+            singleWomanPhone: result.registration.singleWomanPhone || '',
+            singleManName: result.registration.singleManName || '',
+            singleManPhone: result.registration.singleManPhone || '',
+            doublePlayer1Name: result.registration.doublePlayer1Name || '',
+            doublePlayer1Phone: result.registration.doublePlayer1Phone || '',
+            doublePlayer2Name: result.registration.doublePlayer2Name || '',
+            doublePlayer2Phone: result.registration.doublePlayer2Phone || '',
           }));
         } else {
-          setEmailStatus('new');
           setExistingData(null);
-          // Clear all form fields except email when email doesn't exist
           setFormData(prev => ({
             ...prev,
-            bidang: '',
-            teamA1: '',
-            teamB1: '',
-            phoneA1: '',
-            teamA2: '',
-            teamB2: '',
-            phoneA2: '',
-            phoneB1: '',
-            phoneB2: '',
+            singleWomanName: '',
+            singleWomanPhone: '',
+            singleManName: '',
+            singleManPhone: '',
+            doublePlayer1Name: '',
+            doublePlayer1Phone: '',
+            doublePlayer2Name: '',
+            doublePlayer2Phone: '',
           }));
         }
-      } else {
-        setEmailStatus('error');
-      }
+      } 
     } catch (error) {
-      console.error('Error checking email:', error);
-      setEmailStatus('error');
+      console.error('Error checking bidang:', error);
     } finally {
-      setIsCheckingEmail(false);
+      setIsCheckingBidang(false);
     }
-
   }, []);
 
-  // Effect to check email when debounced value changes
+  // Effect to check bidang when debounced value changes
   useEffect(() => {
-    // Check if email is valid format before making API calls
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (debouncedEmail && emailPattern.test(debouncedEmail)) {
-      checkEmailExists(debouncedEmail);
+    if (debouncedBidang && debouncedBidang.trim() !== '') {
+      checkBidangExists(debouncedBidang);
     } else {
-      setEmailStatus(null);
       setExistingData(null);
     }
-  }, [debouncedEmail, checkEmailExists]);
+  }, [debouncedBidang, checkBidangExists]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
-
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email harus diisi';
-    } else {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailPattern.test(formData.email)) {
-        newErrors.email = 'Format email tidak valid';
-      }
-    }
 
     if (!formData.bidang.trim()) {
       newErrors.bidang = 'Bidang harus dipilih';
     }
 
-    if (!formData.teamA1.trim()) {
-      newErrors.teamA1 = 'Team A1 harus diisi';
-    } else if (formData.teamA1.trim().length < 2) {
-      newErrors.teamA1 = 'Nama team harus minimal 2 karakter';
+    // Double team validation (required)
+    if (!formData.doublePlayer1Name.trim()) {
+      newErrors.doublePlayer1Name = 'Nama pemain double 1 harus diisi';
+    } else if (formData.doublePlayer1Name.trim().length < 2) {
+      newErrors.doublePlayer1Name = 'Nama pemain harus minimal 2 karakter';
     }
 
-    if (!formData.teamA2.trim()) {
-      newErrors.teamA2 = 'Team A2 harus diisi';
-    } else if (formData.teamA2.trim().length < 2) {
-      newErrors.teamA2 = 'Nama team harus minimal 2 karakter';
+    if (!formData.doublePlayer2Name.trim()) {
+      newErrors.doublePlayer2Name = 'Nama pemain double 2 harus diisi';
+    } else if (formData.doublePlayer2Name.trim().length < 2) {
+      newErrors.doublePlayer2Name = 'Nama pemain harus minimal 2 karakter';
     }
 
-    // Team B1 and B2 are optional, but if filled, should have minimum length
-    if (formData.teamB1.trim() && formData.teamB1.trim().length < 2) {
-      newErrors.teamB1 = 'Nama team harus minimal 2 karakter';
+    if (!formData.doublePlayer1Phone.trim()) {
+      newErrors.doublePlayer1Phone = 'Nomor handphone pemain double 1 harus diisi';
     }
 
-    if (formData.teamB2.trim() && formData.teamB2.trim().length < 2) {
-      newErrors.teamB2 = 'Nama team harus minimal 2 karakter';
+    if (!formData.doublePlayer2Phone.trim()) {
+      newErrors.doublePlayer2Phone = 'Nomor handphone pemain double 2 harus diisi';
+    }
+
+    // Single woman validation (optional, but if name is filled, phone is required)
+    if (formData.singleWomanName.trim()) {
+      if (formData.singleWomanName.trim().length < 2) {
+        newErrors.singleWomanName = 'Nama pemain harus minimal 2 karakter';
+      }
+      if (!formData.singleWomanPhone.trim()) {
+        newErrors.singleWomanPhone = 'Nomor handphone wajib diisi jika nama diisi';
+      }
+    }
+
+    // Single man validation (optional, but if name is filled, phone is required)
+    if (formData.singleManName.trim()) {
+      if (formData.singleManName.trim().length < 2) {
+        newErrors.singleManName = 'Nama pemain harus minimal 2 karakter';
+      }
+      if (!formData.singleManPhone.trim()) {
+        newErrors.singleManPhone = 'Nomor handphone wajib diisi jika nama diisi';
+      }
     }
 
     // Phone number validation
     const phonePattern = /^[\d\s&+()-]+$/;
-
-    if (!formData.phoneA1.trim()) {
-      newErrors.phoneA1 = 'Nomor handphone A1 harus diisi';
-    } else if (!phonePattern.test(formData.phoneA1)) {
-      newErrors.phoneA1 = 'Format nomor handphone tidak valid';
-    }
-
-    if (!formData.phoneA2.trim()) {
-      newErrors.phoneA2 = 'Nomor handphone A2 harus diisi';
-    } else if (!phonePattern.test(formData.phoneA2)) {
-      newErrors.phoneA2 = 'Format nomor handphone tidak valid';
-    }
-
-    // Phone B1 and B2 are optional, but if filled, should be valid
-    if (formData.phoneB1.trim() && !phonePattern.test(formData.phoneB1)) {
-      newErrors.phoneB1 = 'Format nomor handphone tidak valid';
-    }
-
-    if (formData.phoneB2.trim() && !phonePattern.test(formData.phoneB2)) {
-      newErrors.phoneB2 = 'Format nomor handphone tidak valid';
-    }
+    const phoneFields = ['doublePlayer1Phone', 'doublePlayer2Phone', 'singleWomanPhone', 'singleManPhone'] as const;
+    
+    phoneFields.forEach(field => {
+      if (formData[field].trim() && !phonePattern.test(formData[field])) {
+        newErrors[field] = 'Format nomor handphone tidak valid';
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -272,17 +258,16 @@ export default function RegistrationForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
           registrationData: {
             bidang: formData.bidang,
-            teamA1: formData.teamA1,
-            teamB1: formData.teamB1,
-            phoneA1: formData.phoneA1,
-            teamA2: formData.teamA2,
-            teamB2: formData.teamB2,
-            phoneA2: formData.phoneA2,
-            phoneB1: formData.phoneB1,
-            phoneB2: formData.phoneB2,
+            singleWomanName: formData.singleWomanName,
+            singleWomanPhone: formData.singleWomanPhone,
+            singleManName: formData.singleManName,
+            singleManPhone: formData.singleManPhone,
+            doublePlayer1Name: formData.doublePlayer1Name,
+            doublePlayer1Phone: formData.doublePlayer1Phone,
+            doublePlayer2Name: formData.doublePlayer2Name,
+            doublePlayer2Phone: formData.doublePlayer2Phone,
           }
         }),
       });
@@ -297,19 +282,17 @@ export default function RegistrationForm() {
             : 'Pendaftaran berhasil! Mengarahkan ke halaman konfirmasi...'
         );
         setFormData({
-          email: '',
           bidang: '',
-          teamA1: '',
-          teamA2: '',
-          teamB1: '',
-          teamB2: '',
-          phoneA1: '',
-          phoneA2: '',
-          phoneB1: '',
-          phoneB2: '',
+          singleWomanName: '',
+          singleWomanPhone: '',
+          singleManName: '',
+          singleManPhone: '',
+          doublePlayer1Name: '',
+          doublePlayer1Phone: '',
+          doublePlayer2Name: '',
+          doublePlayer2Phone: '',
         });
-        // Reset email status
-        setEmailStatus(null);
+        // Reset bidang status
         setExistingData(null);
         setTimeout(() => {
           router.push('/success');
@@ -326,50 +309,50 @@ export default function RegistrationForm() {
   };
 
   return (
-    <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-[#2d3748] to-[#1a2332] rounded-2xl shadow-2xl overflow-hidden border border-[#d4af37]/50">
+    <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-card to-secondary rounded-2xl shadow-2xl overflow-hidden border border-accent/50">
       {/* Form Header */}
-      <div className="bg-gradient-to-br from-[#1a2332] via-[#2d3748] to-[#1a2332] text-white p-6 text-center relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary via-primary to-primary p-6 text-center relative overflow-hidden">
         {/* Spotlight effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#d4af37]/20 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-accent/20 via-transparent to-transparent"></div>
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
 
         <div className="relative z-10">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#d4af37] via-[#b8941f] to-[#9c7b1a] rounded-full mx-auto mb-3 flex items-center justify-center text-2xl shadow-[0_8px_25px_rgba(212,175,55,0.4)] border-2 border-[#d4af37]/30">
+          <div className="w-12 h-12 bg-gradient-to-br from-accent via-accent to-accent rounded-full mx-auto mb-3 flex items-center justify-center text-2xl shadow-[0_8px_25px_rgba(212,175,55,0.4)] border-2 border-white/30">
             📝
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-[#f5f7fa]">FORM PENDAFTARAN</h2>
-          <p className="text-sm opacity-90 text-[#d4af37]">TI Billiard Cup 2025</p>
+          <h2 className="text-2xl font-bold mb-2 text-accent">FORM PENDAFTARAN</h2>
+          <p className="text-sm opacity-90 text-accent">TI Billiard Cup 2025</p>
         </div>
       </div>
 
       {/* Form Content */}
       <div className="p-8">
         {/* Instructions */}
-        <div className="bg-gradient-to-r from-[#1a2332]/50 to-[#2d3748]/50 border-l-4 border-[#d4af37] p-4 mb-6 backdrop-blur-sm">
-          <h3 className="font-semibold text-[#d4af37] mb-2">📋 Petunjuk Pendaftaran:</h3>
-          <ul className="text-sm text-[#f5f7fa] space-y-1">
+        <div className="bg-secondary border-l-4 border-accent p-4 mb-6 backdrop-blur-sm">
+          <h3 className="font-semibold text-accent mb-2">📋 Petunjuk Pendaftaran:</h3>
+          <ul className="text-sm text-foreground space-y-1">
             <li>• Pilih bidang Anda dari dropdown menu yang tersedia</li>
-            <li>• <strong>Wajib diisi:</strong> Team A1 & A2 beserta nomor handphone masing-masing</li>
-            <li>• <strong>Opsional:</strong> Team B1 & B2 beserta nomor handphone (jika ada peserta tambahan)</li>
-            <li>• Maksimal 4 peserta per bidang (2 wajib + 2 opsional)</li>
-            <li>• Isi nama lengkap untuk setiap peserta</li>
+            <li>• <strong>Wajib diisi:</strong> Kategori Double (2 pemain dengan nomor handphone masing-masing)</li>
+            <li>• <strong>Opsional:</strong> Kategori Single Woman (1 pemain) dan/atau Single Man (1 pemain)</li>
+            <li>• Maksimal 4 peserta per bidang: 2 double + 1 single woman + 1 single man</li>
+            <li>• Minimal harus mengisi kategori Double untuk dapat mendaftar</li>
             <li>• Nomor handphone harus aktif WhatsApp untuk komunikasi turnamen</li>
             <li>• Format nomor handphone: contoh 083822743692 (tanpa +62 atau 0)</li>
           </ul>
         </div>
 
         {/* Tournament Information */}
-        <div className="bg-gradient-to-r from-[#2d3748]/50 to-[#1a2332]/30 border-l-4 border-[#d4af37] p-4 mb-6 backdrop-blur-sm">
-          <h3 className="font-semibold text-[#d4af37] mb-2">📅 Informasi Turnamen:</h3>
-          <div className="text-sm text-[#f5f7fa] space-y-2 mb-4">
-            <p><strong>Tanggal:</strong> 13 - 18 Oktober 2025</p>
+        <div className="bg-secondary border-l-4 border-accent p-4 mb-6 backdrop-blur-sm">
+          <h3 className="font-semibold text-accent mb-2">📅 Informasi Turnamen:</h3>
+          <div className="text-sm text-foreground space-y-2 mb-4">
+            <p><strong>Tanggal:</strong> 22 November 2025 - Selesai</p>
             <p><strong>Waktu:</strong> 18.00 - 20.00 WIB</p>
             <p><strong>Lokasi:</strong> Greenlight Cafe & Billiard</p>
             <p><strong>Alamat:</strong> Jl. Purnawarman No.3, Bandung</p>
           </div>
 
           {/* Google Maps Embed */}
-          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-[#d4af37]/50 mb-2">
+          <div className="relative w-full h-48 rounded-lg overflow-hidden border border-accent/50 mb-2">
             <iframe
               width="100%"
               height="100%"
@@ -383,92 +366,24 @@ export default function RegistrationForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email Field */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-[#d4af37] mb-2">
-              Email <span className="text-[#d4af37]">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="email@example.com"
-              required
-              disabled={isLoadingEmails}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.email ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingEmails ? 'opacity-50 cursor-not-allowed' : ''}`}
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-            )}
-
-            {/* Email Status Display */}
-            {isLoadingEmails && (
-              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
-                Memuat data email...
-              </div>
-            )}
-
-            {isCheckingEmail && (
-              <div className="mt-2 text-sm text-[#d4af37] flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
-                Mengecek email...
-              </div>
-            )}
-
-            {emailStatus === 'existing' && existingData && (
-              <div className="mt-2 p-3 bg-blue-900/50 border border-blue-400/50 rounded-lg">
-                <p className="text-sm text-blue-300">
-                  ✅ Email sudah terdaftar! Data yang tersimpan telah dimuat ke form.
-                </p>
-                <p className="text-xs text-blue-400 mt-1">
-                  Anda dapat memperbarui informasi dan menyimpan perubahan.
-                </p>
-              </div>
-            )}
-
-            {emailStatus === 'new' && (
-              <div className="mt-2 p-3 bg-green-900/50 border border-green-400/50 rounded-lg">
-                <p className="text-sm text-green-300">
-                  🆕 Email belum terdaftar. Silakan isi form untuk pendaftaran baru.
-                </p>
-              </div>
-            )}
-
-            {emailStatus === 'error' && (
-              <div className="mt-2 p-3 bg-red-900/50 border border-red-400/50 rounded-lg">
-                <p className="text-sm text-red-300">
-                  ❌ Terjadi kesalahan saat mengecek email. Silakan coba lagi.
-                </p>
-              </div>
-            )}
-
-            <p className="mt-1 text-xs text-[#a0aec0]">
-              Email akan digunakan sebagai identitas unik untuk pendaftaran. Email dicek secara otomatis saat Anda mengetik.
+          {/* Form Fields Disabled Message */}
+          <div className="bg-gradient-to-r from-secondary/50 to-muted/30 border border-accent/30 p-4 rounded-lg backdrop-blur-sm">
+            <p className="text-sm text-accent flex items-center gap-2">
+              <span>🔒</span>
+              {isCheckingBidang
+                ? 'Mengecek ketersediaan bidang...'
+                : (formData.bidang.trim() === ''
+                    ? 'Silakan pilih bidang untuk melanjutkan pendaftaran.'
+                    : 'Silakan lengkapi form di bawah ini untuk mendaftar.'
+                  )
+              }
             </p>
           </div>
 
-          {/* Form Fields Disabled Message */}
-          {isFormDisabled && (
-            <div className="bg-gradient-to-r from-[#2d3748]/50 to-[#1a2332]/30 border border-[#d4af37]/30 p-4 rounded-lg backdrop-blur-sm">
-              <p className="text-sm text-[#d4af37] flex items-center gap-2">
-                <span>🔒</span>
-                {isCheckingEmail
-                  ? 'Mengecek validitas email...'
-                  : !emailStatus
-                    ? 'Silakan masukkan email yang valid untuk melanjutkan pendaftaran.'
-                    : 'Terjadi kesalahan saat memvalidasi email. Silakan coba lagi.'
-                }
-              </p>
-            </div>
-          )}
-
           {/* Bidang Selection */}
           <div>
-            <label htmlFor="bidang" className="block text-sm font-semibold text-[#d4af37] mb-2">
-              Bidang <span className="text-[#d4af37]">*</span>
+            <label htmlFor="bidang" className="block text-sm font-semibold text-accent mb-2">
+              Bidang <span className="text-accent">*</span>
             </label>
             <select
               id="bidang"
@@ -476,19 +391,19 @@ export default function RegistrationForm() {
               value={formData.bidang}
               onChange={handleInputChange}
               required
-              disabled={isLoadingBidang || isFormDisabled}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.bidang ? 'border-red-400' : 'border-[#2d3748]'} ${isLoadingBidang || isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isLoadingBidang}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground bg-input backdrop-blur-sm placeholder-muted-foreground ${errors.bidang ? 'border-destructive' : 'border-border'} ${isLoadingBidang || isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <option value="" className="bg-[#1a2332] text-[#f5f7fa]">
+              <option value="" className="bg-background text-foreground">
                 {isLoadingBidang ? 'Memuat bidang...' : 'Pilih Bidang'}
               </option>
               {bidangOptions.length === 0 && !isLoadingBidang ? (
-                <option value="" className="bg-[#1a2332] text-[#f5f7fa]" disabled>
+                <option value="" className="bg-background text-foreground" disabled>
                   Tidak ada bidang tersedia
                 </option>
               ) : (
                 bidangOptions.map((bidang) => (
-                  <option key={bidang} value={bidang} className="bg-[#1a2332] text-[#f5f7fa]">
+                  <option key={bidang} value={bidang} className="bg-background text-foreground">
                     {bidang}
                   </option>
                 ))
@@ -499,178 +414,258 @@ export default function RegistrationForm() {
             )}
           </div>
 
-          {/* Team A1 - Name and Phone */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/30 to-[#2d3748]/30 rounded-lg border border-[#d4af37]/20">
-            <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team A1 (Wajib)</h4>
+          {/* Double Category - Required */}
+          <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/30 to-muted/30 rounded-lg border border-accent/20">
+            <h4 className="text-lg font-semibold text-accent">ⓘ Kategori Double (Wajib)</h4>
+            
+            {/* Contact message for disabled section */}
+            {isDoubleDisabled && (
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
+                <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
+                <span className="text-amber-800 text-sm leading-relaxed">
+                  Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
+                </span>
+              </div>
+            )}
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Double Player 1 */}
+              <div>
+                <label htmlFor="doublePlayer1Name" className="block text-sm font-semibold text-accent mb-2">
+                  Nama Pemain 1 <span className="text-accent">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="doublePlayer1Name"
+                  name="doublePlayer1Name"
+                  value={formData.doublePlayer1Name}
+                  onChange={handleInputChange}
+                  placeholder="Nama lengkap pemain 1"
+                  required
+                  disabled={isFormDisabled || (existingData?.doublePlayer1Name ?? '') !== ''}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                    errors.doublePlayer1Name ? 'border-red-400' : 'border-border'
+                  } ${
+                    isFormDisabled ? 
+                    'opacity-30 cursor-not-allowed bg-input/50' :
+                    (existingData?.doublePlayer1Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                  }`}
+                />
+                {errors.doublePlayer1Name && (
+                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer1Name}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="doublePlayer1Phone" className="block text-sm font-semibold text-accent mb-2">
+                  No. HP Pemain 1 <span className="text-accent">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="doublePlayer1Phone"
+                  name="doublePlayer1Phone"
+                  value={formData.doublePlayer1Phone}
+                  onChange={handleInputChange}
+                  placeholder="08xxxxxxxxxx"
+                  required
+                  disabled={isFormDisabled || (existingData?.doublePlayer1Phone ?? '') !== ''}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                    errors.doublePlayer1Phone ? 'border-red-400' : 'border-border'
+                  } ${
+                    isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
+                    (existingData?.doublePlayer1Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                  }`}
+                />
+                {errors.doublePlayer1Phone && (
+                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer1Phone}</p>
+                )}
+              </div>
+
+              {/* Double Player 2 */}
+              <div>
+                <label htmlFor="doublePlayer2Name" className="block text-sm font-semibold text-accent mb-2">
+                  Nama Pemain 2 <span className="text-accent">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="doublePlayer2Name"
+                  name="doublePlayer2Name"
+                  value={formData.doublePlayer2Name}
+                  onChange={handleInputChange}
+                  placeholder="Nama lengkap pemain 2"
+                  required
+                  disabled={isFormDisabled || (existingData?.doublePlayer2Name ?? '') !== ''}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                    errors.doublePlayer2Name ? 'border-red-400' : 'border-border'
+                  } ${
+                    isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input' : 
+                    (existingData?.doublePlayer2Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                  }`}
+                />
+                {errors.doublePlayer2Name && (
+                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer2Name}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="doublePlayer2Phone" className="block text-sm font-semibold text-accent mb-2">
+                  No. HP Pemain 2 <span className="text-accent">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="doublePlayer2Phone"
+                  name="doublePlayer2Phone"
+                  value={formData.doublePlayer2Phone}
+                  onChange={handleInputChange}
+                  placeholder="08xxxxxxxxxx"
+                  required
+                  disabled={isFormDisabled || (existingData?.doublePlayer2Phone ?? '') !== ''}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                    errors.doublePlayer2Phone ? 'border-red-400' : 'border-border'
+                  } ${
+                    isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
+                    (existingData?.doublePlayer2Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                  }`}
+                />
+                {errors.doublePlayer2Phone && (
+                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer2Phone}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+
+
+          {/* Single Woman - Optional */}
+          <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/20 to-muted/20 rounded-lg border border-accent/10">
+            <h4 className="text-lg font-semibold text-accent">� Single Putri (Opsional)</h4>
+
+            {/* Contact message for disabled section */}
+            {isSingleWomanDisabled && (
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
+                <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
+                <span className="text-amber-800 text-sm leading-relaxed">
+                  Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
+                </span>
+              </div>
+            )}
 
             <div>
-              <label htmlFor="teamA1" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nama Lengkap <span className="text-[#d4af37]">*</span>
+              <label htmlFor="singleWomanName" className="block text-sm font-semibold text-accent mb-2">
+                Nama Lengkap <span className="text-muted-foreground">(Opsional)</span>
               </label>
               <input
                 type="text"
-                id="teamA1"
-                name="teamA1"
-                value={formData.teamA1}
+                id="singleWomanName"
+                name="singleWomanName"
+                value={formData.singleWomanName}
                 onChange={handleInputChange}
-                placeholder="Nama lengkap peserta A1"
-                required
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamA1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="Nama lengkap peserta putri (opsional)"
+                disabled={isFormDisabled || (existingData?.singleWomanName ?? '') !== ''}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                  errors.singleWomanName ? 'border-red-400' : 'border-border'
+                } ${
+                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
+                  (existingData?.singleWomanName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                }`}
               />
-              {errors.teamA1 && (
-                <p className="mt-1 text-sm text-red-400">{errors.teamA1}</p>
+              {errors.singleWomanName && (
+                <p className="mt-1 text-sm text-red-400">{errors.singleWomanName}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="phoneA1" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nomor Handphone (WA) <span className="text-[#d4af37]">*</span>
+              <label htmlFor="singleWomanPhone" className="block text-sm font-semibold text-accent mb-2">
+                Nomor Handphone (WA) <span className="text-muted-foreground">(Opsional)</span>
               </label>
               <input
                 type="tel"
-                id="phoneA1"
-                name="phoneA1"
-                value={formData.phoneA1}
+                id="singleWomanPhone"
+                name="singleWomanPhone"
+                value={formData.singleWomanPhone}
                 onChange={handleInputChange}
-                placeholder="Contoh: 083822743692"
-                required
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneA1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="08xxxxxxxxxx (opsional)"
+                disabled={isFormDisabled || (existingData?.singleWomanPhone ?? '') !== ''}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                  errors.singleWomanPhone ? 'border-red-400' : 'border-border'
+                } ${
+                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
+                  (existingData?.singleWomanPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                }`}
               />
-              {errors.phoneA1 && (
-                <p className="mt-1 text-sm text-red-400">{errors.phoneA1}</p>
+              {errors.singleWomanPhone && (
+                <p className="mt-1 text-sm text-red-400">{errors.singleWomanPhone}</p>
               )}
             </div>
           </div>
 
-          {/* Team A2 - Name and Phone */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/30 to-[#2d3748]/30 rounded-lg border border-[#d4af37]/20">
-            <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team A2 (Wajib)</h4>
+          {/* Single Man - Optional */}
+          <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/20 to-muted/20 rounded-lg border border-accent/10">
+            <h4 className="text-lg font-semibold text-accent">� Single Putra (Opsional)</h4>
+
+            {/* Contact message for disabled section */}
+            {isSingleManDisabled && (
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
+                <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
+                <span className="text-amber-800 text-sm leading-relaxed">
+                  Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
+                </span>
+              </div>
+            )}
 
             <div>
-              <label htmlFor="teamA2" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nama Lengkap <span className="text-[#d4af37]">*</span>
+              <label htmlFor="singleManName" className="block text-sm font-semibold text-accent mb-2">
+                Nama Lengkap <span className="text-muted-foreground">(Opsional)</span>
               </label>
               <input
                 type="text"
-                id="teamA2"
-                name="teamA2"
-                value={formData.teamA2}
+                id="singleManName"
+                name="singleManName"
+                value={formData.singleManName}
                 onChange={handleInputChange}
-                placeholder="Nama lengkap peserta A2"
-                required
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamA2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="Nama lengkap peserta putra (opsional)"
+                disabled={isFormDisabled || ( existingData?.singleManName ?? '') !== ''}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                  errors.singleManName ? 'border-red-400' : 'border-border'
+                } ${
+                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
+                  (existingData?.singleManName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                }`}
               />
-              {errors.teamA2 && (
-                <p className="mt-1 text-sm text-red-400">{errors.teamA2}</p>
+              {errors.singleManName && (
+                <p className="mt-1 text-sm text-red-400">{errors.singleManName}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="phoneA2" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nomor Handphone (WA) <span className="text-[#d4af37]">*</span>
+              <label htmlFor="singleManPhone" className="block text-sm font-semibold text-accent mb-2">
+                Nomor Handphone (WA) <span className="text-muted-foreground">(Opsional)</span>
               </label>
               <input
                 type="tel"
-                id="phoneA2"
-                name="phoneA2"
-                value={formData.phoneA2}
+                id="singleManPhone"
+                name="singleManPhone"
+                value={formData.singleManPhone}
                 onChange={handleInputChange}
-                placeholder="Contoh: 083822743693"
-                required
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneA2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="08xxxxxxxxxx (opsional)"
+                disabled={isFormDisabled || (existingData?.singleManPhone ?? '') !== ''}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                  errors.singleManPhone ? 'border-red-400' : 'border-border'
+                } ${
+                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
+                  (existingData?.singleManPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                    'bg-input/50'
+                }`}
               />
-              {errors.phoneA2 && (
-                <p className="mt-1 text-sm text-red-400">{errors.phoneA2}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Team B1 - Name and Phone */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/20 to-[#2d3748]/20 rounded-lg border border-[#d4af37]/10">
-            <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team B1 (Opsional)</h4>
-
-            <div>
-              <label htmlFor="teamB1" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nama Lengkap <span className="text-[#a0aec0]">(Opsional)</span>
-              </label>
-              <input
-                type="text"
-                id="teamB1"
-                name="teamB1"
-                value={formData.teamB1}
-                onChange={handleInputChange}
-                placeholder="Nama lengkap peserta B1 (opsional)"
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamB1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              />
-              {errors.teamB1 && (
-                <p className="mt-1 text-sm text-red-400">{errors.teamB1}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="phoneB1" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nomor Handphone (WA) <span className="text-[#a0aec0]">(Opsional)</span>
-              </label>
-              <input
-                type="tel"
-                id="phoneB1"
-                name="phoneB1"
-                value={formData.phoneB1}
-                onChange={handleInputChange}
-                placeholder="Contoh: 083822743694 (opsional)"
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneB1 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              />
-              {errors.phoneB1 && (
-                <p className="mt-1 text-sm text-red-400">{errors.phoneB1}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Team B2 - Name and Phone */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-[#1a2332]/20 to-[#2d3748]/20 rounded-lg border border-[#d4af37]/10">
-            <h4 className="text-lg font-semibold text-[#d4af37]">👤 Team B2 (Opsional)</h4>
-
-            <div>
-              <label htmlFor="teamB2" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nama Lengkap <span className="text-[#a0aec0]">(Opsional)</span>
-              </label>
-              <input
-                type="text"
-                id="teamB2"
-                name="teamB2"
-                value={formData.teamB2}
-                onChange={handleInputChange}
-                placeholder="Nama lengkap peserta B2 (opsional)"
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.teamB2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              />
-              {errors.teamB2 && (
-                <p className="mt-1 text-sm text-red-400">{errors.teamB2}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="phoneB2" className="block text-sm font-semibold text-[#d4af37] mb-2">
-                Nomor Handphone (WA) <span className="text-[#a0aec0]">(Opsional)</span>
-              </label>
-              <input
-                type="tel"
-                id="phoneB2"
-                name="phoneB2"
-                value={formData.phoneB2}
-                onChange={handleInputChange}
-                placeholder="Contoh: 083822743695 (opsional)"
-                disabled={isFormDisabled}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#d4af37] focus:border-transparent transition-all text-[#f5f7fa] bg-[#2d3748]/50 backdrop-blur-sm placeholder-[#a0aec0] ${errors.phoneB2 ? 'border-red-400' : 'border-[#2d3748]'} ${isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              />
-              {errors.phoneB2 && (
-                <p className="mt-1 text-sm text-red-400">{errors.phoneB2}</p>
+              {errors.singleManPhone && (
+                <p className="mt-1 text-sm text-red-400">{errors.singleManPhone}</p>
               )}
             </div>
           </div>
@@ -679,20 +674,20 @@ export default function RegistrationForm() {
           <button
             type="submit"
             disabled={isSubmitting || isFormDisabled}
-            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-amber-400/50 ${isSubmitting || isFormDisabled
-              ? 'bg-[#2d3748] cursor-not-allowed text-[#a0aec0]'
-              : 'bg-gradient-to-r from-[#d4af37] to-[#b8941f] hover:from-[#b8941f] hover:to-[#9c7b1a] hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-[#d4af37]/25 text-[#1a2332]'
+            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-accent-400/50 ${isSubmitting || isFormDisabled
+              ? 'bg-input cursor-not-allowed text-muted-foreground'
+              : 'bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-accent/25 text-accent-foreground'
               }`}
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-[#2d3748] border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-border border-t-transparent rounded-full animate-spin"></div>
                 Memproses...
               </div>
             ) : isFormDisabled ? (
-              isCheckingEmail ? 'Mengecek Email...' : !emailStatus ? 'Masukkan Email Valid' : 'Email Error'
+              isCheckingBidang ? 'Mengecek Bidang...' : formData.bidang.trim() === '' ? 'Pilih Bidang' : 'Bidang Error'
             ) : (
-              emailStatus === 'existing' ? '📝 PERBARUI DATA' : '🚀 DAFTAR SEKARANG'
+              '🚀 DAFTAR SEKARANG'
             )}
           </button>
         </form>
@@ -708,8 +703,8 @@ export default function RegistrationForm() {
         )}
 
         {/* Footer Info */}
-        <div className="mt-8 pt-6 border-t border-[#2d3748]/50 text-center">
-          <p className="text-sm text-[#a0aec0] mb-3">
+        <div className="mt-8 pt-6 border-t border-border/50 text-center">
+          <p className="text-sm text-muted-foreground mb-3">
             📞 Butuh bantuan? Hubungi:
           </p>
           <div className="space-y-2">
@@ -717,7 +712,7 @@ export default function RegistrationForm() {
               href="https://wa.me/+6285189970998"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
+              className="font-semibold text-foreground hover:text-accent transition-colors duration-300 block"
             >
               📱 085189970998 (Michael Sean - TI)
             </a>
@@ -725,7 +720,7 @@ export default function RegistrationForm() {
               href="https://wa.me/+6285624055869"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#f5f7fa] hover:text-[#d4af37] transition-colors duration-300 block"
+              className="font-semibold text-foreground hover:text-accent transition-colors duration-300 block"
             >
               📱 085624055869 (Novi - TI)
             </a>

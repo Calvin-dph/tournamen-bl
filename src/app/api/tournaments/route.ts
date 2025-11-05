@@ -34,6 +34,7 @@ export async function GET() {
         *,
         teams(count)
       `)
+      .is('is_active', true)
       .in('status', ['group_stage', 'knockout', 'completed'])
       .order('created_at', { ascending: false })
 

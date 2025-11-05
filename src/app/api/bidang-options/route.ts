@@ -46,7 +46,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch bidang options'
+        error: 'Gagal mengambil opsi bidang'
       },
       { status: 500 }
     );

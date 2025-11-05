@@ -43,7 +43,7 @@ export async function GET(
       console.error('Teams fetch error:', teamsError)
       return NextResponse.json({
         success: false,
-        error: 'Failed to fetch teams',
+        error: 'Gagal mengambil data tim',
         details: teamsError.message
       }, { status: 500 })
     }
@@ -60,7 +60,7 @@ export async function GET(
       console.error('Matches fetch error:', matchesError)
       return NextResponse.json({
         success: false,
-        error: 'Failed to fetch matches',
+        error: 'Gagal mengambil data pertandingan',
         details: matchesError.message
       }, { status: 500 })
     }
