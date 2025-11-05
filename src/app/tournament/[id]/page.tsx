@@ -559,7 +559,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-[var(--accent-foreground)] to-[var(--accent-foreground)]/80 h-2 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground)]/80 h-2 rounded-full transition-all duration-500"
                   style={{
                     width: `${matches.length > 0 ? (matches.filter(m => m.status === 'completed').length / matches.length) * 100 : 0}%`
                   }}
