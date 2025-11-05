@@ -71,7 +71,7 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
 
   const getRoundName = (roundNumber: number, totalRounds: number) => {
     const roundsFromEnd = totalRounds - roundNumber
-    
+
     if (roundsFromEnd === 0) return "Final"
     if (roundsFromEnd === 1) return "Semifinals"
     if (roundsFromEnd === 2) return "Quarterfinals"
@@ -87,9 +87,8 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
 
     return (
       <div className="bg-card border border-accent/20 rounded-lg p-3 mb-4 min-w-[200px]">
-        <div className={`flex items-center justify-between p-2 rounded ${
-          isTeam1Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
-        }`}>
+        <div className={`flex items-center justify-between p-2 rounded ${isTeam1Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
+          }`}>
           <span className={`font-medium ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'}`}>
             {team1Name}
           </span>
@@ -97,9 +96,8 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
             {match.team1Score ?? '-'}
           </span>
         </div>
-        <div className={`flex items-center justify-between p-2 rounded mt-1 ${
-          isTeam2Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
-        }`}>
+        <div className={`flex items-center justify-between p-2 rounded mt-1 ${isTeam2Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
+          }`}>
           <span className={`font-medium ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'}`}>
             {team2Name}
           </span>
@@ -119,23 +117,23 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
           {rightMatches.map((_, pairIndex) => {
             const topMatchIndex = pairIndex * 2;
             const bottomMatchIndex = pairIndex * 2 + 1;
-            
+
             if (bottomMatchIndex >= leftMatches.length) return null;
-            
+
             // Calculate positions based on match distribution
             const totalLeftMatches = leftMatches.length;
             const spacing = 100 / totalLeftMatches;
-            
+
             const y1 = (topMatchIndex + 0.5) * spacing;
             const y2 = (bottomMatchIndex + 0.5) * spacing;
             const yMid = (y1 + y2) / 2;
-            
+
             return (
               <g key={pairIndex}>
-                <line x1="0" y1={`${y1}%`} x2="30" y2={`${y1}%`} stroke="var(--accent-foreground)" strokeWidth="2" />
-                <line x1="0" y1={`${y2}%`} x2="30" y2={`${y2}%`} stroke="var(--accent-foreground)" strokeWidth="2" />
-                <line x1="30" y1={`${y1}%`} x2="30" y2={`${y2}%`} stroke="var(--accent-foreground)" strokeWidth="2" />
-                <line x1="30" y1={`${yMid}%`} x2="60" y2={`${yMid}%`} stroke="var(--accent-foreground)" strokeWidth="2" />
+                <line x1="0" y1={`${y1}%`} x2="30" y2={`${y1}%`} stroke="var(--foreground)" strokeWidth="2" />
+                <line x1="0" y1={`${y2}%`} x2="30" y2={`${y2}%`} stroke="var(--foreground)" strokeWidth="2" />
+                <line x1="30" y1={`${y1}%`} x2="30" y2={`${y2}%`} stroke="var(--foreground)" strokeWidth="2" />
+                <line x1="30" y1={`${yMid}%`} x2="60" y2={`${yMid}%`} stroke="var(--foreground)" strokeWidth="2" />
               </g>
             );
           })}
@@ -146,9 +144,9 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
 
   // Find champion
   const finalMatch = rounds[totalRounds]
-  const champion = finalMatch && finalMatch[0] && finalMatch[0].winnerId 
-    ? finalMatch[0].team1?.id === finalMatch[0].winnerId 
-      ? finalMatch[0].team1?.name 
+  const champion = finalMatch && finalMatch[0] && finalMatch[0].winnerId
+    ? finalMatch[0].team1?.id === finalMatch[0].winnerId
+      ? finalMatch[0].team1?.name
       : finalMatch[0].team2?.name
     : "TBD"
 
@@ -168,53 +166,53 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
 
         <div className="bg-card border border-accent/20 rounded-xl shadow-xl p-4 overflow-hidden">
           <div className="overflow-x-auto">
-          <div className="flex gap-2 min-w-max relative">
-            {sortedRoundNumbers.map((roundNum, index) => {
-              const isLastRound = index === sortedRoundNumbers.length - 1
-              const currentRoundMatches = rounds[roundNum]
-              const nextRoundMatches = rounds[sortedRoundNumbers[index + 1]]
-              
-              return (
-                <React.Fragment key={roundNum}>
-                  {/* Round Column */}
-                  <div className="flex flex-col" style={{ width: '220px' }}>
-                    <h2 className="text-xl font-bold text-foreground mb-4 text-center">
-                      {getRoundName(roundNum, totalRounds)}
-                    </h2>
-                    <div className="flex flex-col justify-around h-full">
-                      {currentRoundMatches.map(match => (
-                        <MatchCard key={match.id} match={match} />
-                      ))}
+            <div className="flex gap-2 min-w-max relative">
+              {sortedRoundNumbers.map((roundNum, index) => {
+                const isLastRound = index === sortedRoundNumbers.length - 1
+                const currentRoundMatches = rounds[roundNum]
+                const nextRoundMatches = rounds[sortedRoundNumbers[index + 1]]
+
+                return (
+                  <React.Fragment key={roundNum}>
+                    {/* Round Column */}
+                    <div className="flex flex-col" style={{ width: '220px' }}>
+                      <h2 className="text-xl font-bold text-foreground mb-4 text-center">
+                        {getRoundName(roundNum, totalRounds)}
+                      </h2>
+                      <div className="flex flex-col justify-around h-full">
+                        {currentRoundMatches.map(match => (
+                          <MatchCard key={match.id} match={match} />
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Connector Lines (if not last round) */}
-                  {!isLastRound && nextRoundMatches && (
-                    <ConnectorLines 
-                      leftMatches={currentRoundMatches} 
-                      rightMatches={nextRoundMatches}
-                    />
-                  )}
-                </React.Fragment>
-              )
-            })}
+                    {/* Connector Lines (if not last round) */}
+                    {!isLastRound && nextRoundMatches && (
+                      <ConnectorLines
+                        leftMatches={currentRoundMatches}
+                        rightMatches={nextRoundMatches}
+                      />
+                    )}
+                  </React.Fragment>
+                )
+              })}
 
-            {/* Connector line to Champion */}
-            <div className="flex flex-col justify-center" style={{ width: '60px' }}>
-              <svg width="60" height="20">
-                <line x1="0" y1="10" x2="60" y2="10" stroke="var(--accent-foreground)" strokeWidth="2" />
-              </svg>
-            </div>
-
-            {/* Champion */}
-            <div className="flex flex-col justify-center">
-              <div className="text-center">
-                <Award className="text-accent mx-auto mb-3" size={48} />
-                <h2 className="text-xl font-bold text-foreground mb-3">Juara</h2>
-                <div className="bg-gradient-to-r from-accent/80 to-accent text-accent-foreground font-bold text-xl py-4 px-6 rounded-lg shadow-lg border border-accent/30">
-                  {champion}
-                </div>
+              {/* Connector line to Champion */}
+              <div className="flex flex-col justify-center" style={{ width: '60px' }}>
+                <svg width="60" height="20">
+                  <line x1="0" y1="10" x2="60" y2="10" stroke="var(--foreground)" strokeWidth="2" />
+                </svg>
               </div>
+
+              {/* Champion */}
+              <div className="flex flex-col justify-center">
+                <div className="text-center">
+                  <Award className="text-accent mx-auto mb-3" size={48} />
+                  <h2 className="text-xl font-bold text-foreground mb-3">Juara</h2>
+                  <div className="bg-gradient-to-r from-accent/80 to-accent text-accent-foreground font-bold text-xl py-4 px-6 rounded-lg shadow-lg border border-accent/30">
+                    {champion}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

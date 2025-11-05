@@ -2,33 +2,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Custom Theme Color Scheme */
-  --background: #f5f7fa;
-  /* Soft Gray */
-  --foreground: #2d3748;
-  /* Charcoal */
-  --card: #ffffff;
-  /* White for cards */
-  --card-foreground: #2d3748;
-  /* Charcoal */
+  /* Light Mode Theme Color Scheme */
+  --background: #ffffff;
+  /* Pure White Background */
+  --foreground: #1f2937;
+  /* Dark Gray Text */
+  --card: #f9fafb;
+  /* Very Light Gray for cards */
+  --card-foreground: #1f2937;
+  /* Dark Gray Text */
   --primary: #1a2332;
   /* Deep Navy */
-  --primary-foreground: #f5f7fa;
-  /* Soft Gray */
-  --secondary: #f5f7fa;
-  /* Soft Gray */
-  --secondary-foreground: #2d3748;
-  /* Charcoal */
-  --border: #e2e8f0;
-  /* Light border */
+  --primary-foreground: #f9fafb;
+  /* Light Text */
+  --secondary: #f3f4f6;
+  /* Light Gray */
+  --secondary-foreground: #1f2937;
+  /* Dark Gray */
+  --border: #d1d5db;
+  /* Medium Gray border */
   --input: #ffffff;
   /* White input */
   --ring: #d4af37;
   /* Gold */
-  --muted: #f1f5f9;
+  --muted: #f3f4f6;
   /* Light muted */
-  --muted-foreground: #64748b;
-  /* Muted text */
+  --muted-foreground: #6b7280;
+  /* Medium Gray text */
   --accent: #d4af37;
   /* Gold */
   --accent-foreground: #1a2332;
@@ -37,7 +37,7 @@
   /* Red for destructive actions */
   --destructive-foreground: #ffffff;
   --popover: #ffffff;
-  --popover-foreground: #2d3748;
+  --popover-foreground: #1f2937;
   --radius: 0.5rem;
 
   /* Chart colors using your theme */
@@ -55,12 +55,75 @@
   /* Sidebar colors */
   --sidebar: #1a2332;
   /* Deep Navy */
-  --sidebar-foreground: #f5f7fa;
-  /* Soft Gray */
+  --sidebar-foreground: #f9fafb;
+  /* Light Text */
   --sidebar-primary: #d4af37;
   /* Gold */
   --sidebar-accent: #334155;
   /* Darker navy variant */
+}
+
+.dark {
+  /* Dark Mode Theme Color Scheme - Perfect for Billiard Places */
+  --background: #0f0f0f;
+  /* Very Dark Background */
+  --foreground: #e2e8f0;
+  /* Light Gray Text */
+  --card: #1a1a1a;
+  /* Dark Card Background */
+  --card-foreground: #e2e8f0;
+  /* Light Gray Text */
+  --primary: #d4af37;
+  /* Gold - Primary */
+  --primary-foreground: #0f0f0f;
+  /* Dark Text on Gold */
+  --secondary: #262626;
+  /* Dark Secondary */
+  --secondary-foreground: #e2e8f0;
+  /* Light Text */
+  --border: #2a2a2a;
+  /* Dark Border */
+  --input: #1a1a1a;
+  /* Dark Input */
+  --ring: #d4af37;
+  /* Gold Ring */
+  --muted: #1f1f1f;
+  /* Dark Muted */
+  --muted-foreground: #a1a1aa;
+  /* Muted Light Text */
+  --accent: #d4af37;
+  /* Gold Accent */
+  --accent-foreground: #0f0f0f;
+  /* Dark Text on Gold */
+  --destructive: #dc2626;
+  /* Red for destructive actions */
+  --destructive-foreground: #ffffff;
+  --popover: #1a1a1a;
+  /* Dark Popover */
+  --popover-foreground: #e2e8f0;
+  /* Light Text */
+
+  /* Chart colors for dark mode */
+  --chart-1: #d4af37;
+  /* Gold */
+  --chart-2: #f59e0b;
+  /* Amber */
+  --chart-3: #3b82f6;
+  /* Blue */
+  --chart-4: #10b981;
+  /* Emerald */
+  --chart-5: #ef4444;
+  /* Red */
+
+  /* Sidebar colors for dark mode */
+  --sidebar: #0a0a0a;
+  /* Very Dark Sidebar */
+  --sidebar-foreground: #e2e8f0;
+  /* Light Text */
+  --sidebar-primary: #d4af37;
+  /* Gold */
+  --sidebar-accent: #1f1f1f;
+  /* Dark Accent */
 }
 
 body {
@@ -153,20 +216,18 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f7fa;
-  /* Soft Gray */
+  background: var(--muted);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #000;
-  /* Gold */
+  background: var(--foreground);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #000;
-  /* Darker gold */
+  background: var(--foreground);
+  opacity: 0.8;
 }
 
 /* Responsive design improvements */
@@ -177,39 +238,141 @@ body {
   }
 }
 
-/* Form input styling for light theme */
+/* Form input styling for both light and dark modes */
 .form-input input,
 .form-input textarea,
 .form-input select {
-  color: #2d3748 !important;
-  /* Charcoal */
-  background-color: #ffffff !important;
-  /* White */
-  border-color: #e2e8f0 !important;
-  /* Light border */
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
 }
 
 .form-input input::placeholder,
 .form-input textarea::placeholder {
-  color: #64748b !important;
-  /* Muted text */
+  color: var(--muted-foreground) !important;
 }
 
 .form-input input:focus,
 .form-input textarea:focus,
 .form-input select:focus {
-  border-color: #d4af37 !important;
-  /* Gold */
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
-  /* Gold shadow */
+  background-color: var(--input) !important;
 }
 
-/* Option styling for light select */
+/* Option styling for both light and dark select */
 .form-input select option {
-  background-color: #ffffff !important;
-  /* White */
-  color: #2d3748 !important;
-  /* Charcoal */
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+/* Enhanced select styling for better dark mode support */
+select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+select option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
+  background-color: var(--input) !important;
+}
+
+/* Global input, textarea, and select focus styling */
+input:focus,
+textarea:focus,
+select:focus {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+}
+
+/* Light mode specific adjustments */
+:root input,
+:root textarea,
+:root select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+/* Dark mode specific form adjustments */
+.dark .form-input input,
+.dark .form-input textarea,
+.dark .form-input select {
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+}
+
+.dark .form-input input:focus,
+.dark .form-input textarea:focus,
+.dark .form-input select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3) !important;
+  background-color: var(--input) !important;
+}
+
+.dark select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+.dark select option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+.dark select:focus {
+  color: var(--foreground) !important;
+  border-color: var(--accent) !important;
+  background-color: var(--input) !important;
+}
+
+/* Dark mode global input fixes */
+.dark input,
+.dark textarea,
+.dark select {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+  border-color: var(--border) !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  color: var(--foreground) !important;
+  background-color: var(--input) !important;
+}
+
+/* Placeholder styling for both modes */
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+/* Focus placeholder styling */
+input:focus::placeholder,
+textarea:focus::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+.dark input:focus::placeholder,
+.dark textarea:focus::placeholder {
+  color: var(--muted-foreground) !important;
 }
 
 /* Line clamp utilities for text truncation */

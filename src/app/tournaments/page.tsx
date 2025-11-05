@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface Tournament {
   id: string
@@ -50,7 +51,7 @@ export default function TournamentsPage() {
     try {
       const response = await fetch('/api/tournaments')
       const data = await response.json()
-      
+
       if (data.success) {
         setTournaments(data.tournaments)
       } else {
@@ -66,14 +67,10 @@ export default function TournamentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto max-w-6xl py-10">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
-              <p className="text-foreground">Memuat turnamen...</p>
-            </div>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-foreground">Memuat turnamen...</p>
         </div>
       </div>
     )
@@ -86,7 +83,7 @@ export default function TournamentsPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <p className="text-destructive mb-4">{error}</p>
-              <button 
+              <button
                 onClick={fetchTournaments}
                 className="px-4 py-2 bg-accent text-accent-foreground rounded-lg hover:opacity-90 transition-opacity"
               >
@@ -104,13 +101,16 @@ export default function TournamentsPage() {
       <div className="container mx-auto max-w-6xl py-10 px-4">
         {/* Header */}
         <div className="flex flex-col gap-4 mb-8">
-          <Link 
-            href="/" 
-            className="text-sm text-accent hover:text-foreground transition-colors inline-flex items-center gap-2"
-          >
-            ← Kembali ke Beranda
-          </Link>
-          
+          <div className="flex items-center justify-between">
+            <Link
+              href="/"
+              className="text-sm text-accent hover:text-foreground transition-colors inline-flex items-center gap-2"
+            >
+              ← Kembali ke Beranda
+            </Link>
+            <ThemeToggle />
+          </div>
+
           <div className="text-center">
             <h1 className="text-4xl font-bold text-foreground mb-2">Turnamen Aktif</h1>
             <p className="text-accent text-lg">TI Billiard Cup 2025</p>
@@ -141,7 +141,7 @@ export default function TournamentsPage() {
                         {statusLabels[tournament.status] || tournament.status}
                       </Badge>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div className="text-sm text-accent">
                         {formatLabels[tournament.format] || tournament.format}
@@ -151,21 +151,21 @@ export default function TournamentsPage() {
                       </div>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-3">
                     {tournament.description && (
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {tournament.description}
                       </p>
                     )}
-                    
+
                     {tournament.location && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>📍</span>
                         <span>{tournament.location}</span>
                       </div>
                     )}
-                    
+
                     {tournament.start_date && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>📅</span>
@@ -178,7 +178,7 @@ export default function TournamentsPage() {
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="pt-2 border-t border-border">
                       <span className="text-accent text-sm font-medium">
                         Lihat Detail →

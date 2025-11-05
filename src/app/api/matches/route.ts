@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type') || 'upcoming';
 
     // Fetch recent matches with team information using foreign key relationships
-    const { data: matches, error } = await  supabase
+    const { data: matches, error } = await supabase
       .from('matches')
       .select(`
         id,
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       `)
       .eq('status', type === 'lastMatches' ? 'completed' : 'pending')
       .not(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', 'is', null)
-      .order(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', { ascending: type === 'lastMatches'? false : true })
+      .order(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', { ascending: type === 'lastMatches' ? false : true })
       .limit(3);
 
     if (error) {
@@ -47,8 +47,8 @@ export async function GET(request: Request) {
     // Transform the data to match the expected format
     const transformedMatches = matches.map(match => ({
       id: match.id,
-      team1_name: match.team1?.name || 'TBA',
-      team2_name: match.team2?.name || 'TBA',
+      team1_name: (match.team1 as { name?: string })?.name ?? 'TBA',
+      team2_name: (match.team2 as { name?: string })?.name ?? 'TBA',
       team1_score: match.team1_score,
       team2_score: match.team2_score,
       status: match.status,

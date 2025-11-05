@@ -3,6 +3,7 @@
 import RegistrationForm from '@/components/RegistrationForm';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function RegisterPage() {
   const [isRegistrationClosed, setIsRegistrationClosed] = useState(false);
@@ -18,19 +19,22 @@ export default function RegisterPage() {
     <div className="min-h-screen p-5 relative overflow-hidden bg-background">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-card via-secondary to-card"></div>
-      
+
       {/* Spotlight Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"></div>
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
 
       {/* Header with Back Button */}
       <div className="w-full max-w-md md:max-w-2xl mx-auto mb-2 relative z-10">
-        <Link href="/" className="inline-flex items-center gap-2 text-accent hover:text-foreground transition-colors mb-6 font-medium">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Kembali ke Halaman Utama
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 text-accent hover:text-foreground transition-colors font-medium">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Kembali ke Halaman Utama
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Registration Form or Closed Message */}
@@ -65,16 +69,16 @@ export default function RegisterPage() {
                     <li>• Alamat: Jl. Purnawarman No.3, Bandung</li>
                     <li>• Peserta yang sudah terdaftar akan dihubungi panitia</li>
                   </ul>
-                  
+
                   {/* Google Maps Embed */}
                   <div className="mt-4">
                     <div className="relative w-full h-48 rounded-lg overflow-hidden border border-border">
-                      <iframe 
-                        width="100%" 
-                        height="100%" 
-                        src="https://maps.google.com/maps?q=greenlight+cafe+%26+billiard&t=&z=15&ie=UTF8&iwloc=&output=embed" 
-                        frameBorder="0" 
-                        scrolling="no" 
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src="https://maps.google.com/maps?q=greenlight+cafe+%26+billiard&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        frameBorder="0"
+                        scrolling="no"
                         className="w-full h-full"
                         title="Lokasi Greenlight Cafe & Billiard"
                       ></iframe>

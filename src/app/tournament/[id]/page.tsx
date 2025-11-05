@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TournamentBracket } from '@/components/TournamentBracket'
 import { supabase } from '@/lib/supabase'
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 interface Tournament {
@@ -334,6 +335,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
             ← Kembali ke turnamen
           </Link>
         </div>
+
       </div>
     )
   }
@@ -342,12 +344,17 @@ export default function TournamentDetailPage({ params }: PageProps) {
     <div className="min-h-screen bg-background px-4 sm:px-6 py-8">
       <div className="container mx-auto max-w-6xl space-y-8 py-10 px-4">
         {/* Navigation */}
-        <Link
-          href="/tournaments"
-          className="text-sm text-accent hover:text-foreground transition-colors inline-flex items-center gap-2"
-        >
-          ← Kembali ke turnamen
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+
+          <Link
+            href="/tournaments"
+            className="text-sm text-accent hover:text-foreground transition-colors inline-flex items-center gap-2"
+          >
+            ← Kembali ke turnamen
+          </Link>
+          <ThemeToggle />
+
+        </div>
 
         {/* Tournament Header */}
         <Card className="bg-card border-border">

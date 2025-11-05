@@ -32,6 +32,31 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue;
 };
 
+// Phone number formatting function
+const formatPhoneNumber = (value: string): string => {
+  // Remove all non-numeric characters
+  const numbers = value.replace(/\D/g, '');
+
+  // Limit to 12 digits (Indonesian phone numbers)
+  const limited = numbers.slice(0, 12);
+
+  return limited;
+};
+
+// Check if field is a phone number field
+const isPhoneField = (fieldName: string): boolean => {
+  return fieldName.includes('Phone');
+};
+
+// Function to mask phone number for display
+const maskPhoneNumber = (phoneNumber: string): string => {
+  if (!phoneNumber || phoneNumber.length < 4) return phoneNumber;
+  const firstTwo = phoneNumber.substring(0, 4);
+  const lastTwo = phoneNumber.substring(phoneNumber.length - 4);
+  const masked = '*'.repeat(phoneNumber.length - 8);
+  return `${firstTwo}${masked}${lastTwo}`;
+};
+
 export default function RegistrationForm() {
   const router = useRouter();
   const [bidangOptions, setBidangOptions] = useState<string[]>([]);
@@ -61,19 +86,19 @@ export default function RegistrationForm() {
 
   // Helper functions to check if specific sections are disabled due to existing data
   const isDoubleDisabled = existingData && (
-    (existingData.doublePlayer1Name ?? '') !== '' || 
+    (existingData.doublePlayer1Name ?? '') !== '' ||
     (existingData.doublePlayer1Phone ?? '') !== '' ||
-    (existingData.doublePlayer2Name ?? '') !== '' || 
+    (existingData.doublePlayer2Name ?? '') !== '' ||
     (existingData.doublePlayer2Phone ?? '') !== ''
   );
 
   const isSingleWomanDisabled = existingData && (
-    (existingData.singleWomanName ?? '') !== '' || 
+    (existingData.singleWomanName ?? '') !== '' ||
     (existingData.singleWomanPhone ?? '') !== ''
   );
 
   const isSingleManDisabled = existingData && (
-    (existingData.singleManName ?? '') !== '' || 
+    (existingData.singleManName ?? '') !== '' ||
     (existingData.singleManPhone ?? '') !== ''
   );
 
@@ -82,7 +107,7 @@ export default function RegistrationForm() {
     const fetchBidangOptions = async () => {
       try {
         const bidangResponse = await fetch('/api/bidang-options');
-        
+
         if (bidangResponse.ok) {
           const bidangData = await bidangResponse.json();
           setBidangOptions(bidangData.options || []);
@@ -149,7 +174,7 @@ export default function RegistrationForm() {
             doublePlayer2Phone: '',
           }));
         }
-      } 
+      }
     } catch (error) {
       console.error('Error checking bidang:', error);
     } finally {
@@ -214,13 +239,20 @@ export default function RegistrationForm() {
       }
     }
 
-    // Phone number validation
-    const phonePattern = /^[\d\s&+()-]+$/;
+    // Phone number validation - Indonesian format
     const phoneFields = ['doublePlayer1Phone', 'doublePlayer2Phone', 'singleWomanPhone', 'singleManPhone'] as const;
-    
+
     phoneFields.forEach(field => {
-      if (formData[field].trim() && !phonePattern.test(formData[field])) {
-        newErrors[field] = 'Format nomor handphone tidak valid';
+      const phoneValue = formData[field].trim();
+      if (phoneValue) {
+        // Check if it's a valid Indonesian phone number (starts with 08 and has 10-12 digits)
+        if (phoneValue.length < 10) {
+          newErrors[field] = 'Nomor handphone minimal 10 digit';
+        } else if (!phoneValue.startsWith('08')) {
+          newErrors[field] = 'Nomor handphone harus dimulai dengan 08';
+        } else if (!/^\d+$/.test(phoneValue)) {
+          newErrors[field] = 'Nomor handphone hanya boleh berisi angka';
+        }
       }
     });
 
@@ -230,9 +262,16 @@ export default function RegistrationForm() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+
+    // Format phone number fields
+    let formattedValue = value;
+    if (isPhoneField(name)) {
+      formattedValue = formatPhoneNumber(value);
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: formattedValue
     }));
   };
 
@@ -252,23 +291,26 @@ export default function RegistrationForm() {
     setIsSubmitting(true);
 
     try {
+      // Combine current form data with existing data to ensure complete payload
+      const completeData = {
+        bidang: formData.bidang,
+        singleWomanName: formData.singleWomanName || (existingData?.singleWomanName || ''),
+        singleWomanPhone: formData.singleWomanPhone || (existingData?.singleWomanPhone || ''),
+        singleManName: formData.singleManName || (existingData?.singleManName || ''),
+        singleManPhone: formData.singleManPhone || (existingData?.singleManPhone || ''),
+        doublePlayer1Name: formData.doublePlayer1Name || (existingData?.doublePlayer1Name || ''),
+        doublePlayer1Phone: formData.doublePlayer1Phone || (existingData?.doublePlayer1Phone || ''),
+        doublePlayer2Name: formData.doublePlayer2Name || (existingData?.doublePlayer2Name || ''),
+        doublePlayer2Phone: formData.doublePlayer2Phone || (existingData?.doublePlayer2Phone || ''),
+      };
+
       const response = await fetch('/api/registrations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          registrationData: {
-            bidang: formData.bidang,
-            singleWomanName: formData.singleWomanName,
-            singleWomanPhone: formData.singleWomanPhone,
-            singleManName: formData.singleManName,
-            singleManPhone: formData.singleManPhone,
-            doublePlayer1Name: formData.doublePlayer1Name,
-            doublePlayer1Phone: formData.doublePlayer1Phone,
-            doublePlayer2Name: formData.doublePlayer2Name,
-            doublePlayer2Phone: formData.doublePlayer2Phone,
-          }
+          registrationData: completeData
         }),
       });
 
@@ -337,7 +379,7 @@ export default function RegistrationForm() {
             <li>• Maksimal 4 peserta per bidang: 2 double + 1 single woman + 1 single man</li>
             <li>• Minimal harus mengisi kategori Double untuk dapat mendaftar</li>
             <li>• Nomor handphone harus aktif WhatsApp untuk komunikasi turnamen</li>
-            <li>• Format nomor handphone: contoh 083822743692 (tanpa +62 atau 0)</li>
+            <li>• Format nomor handphone: dimulai dengan 08, contoh 08123456789 (10-12 digit, hanya angka)</li>
           </ul>
         </div>
 
@@ -373,15 +415,15 @@ export default function RegistrationForm() {
               {isCheckingBidang
                 ? 'Mengecek ketersediaan bidang...'
                 : (formData.bidang.trim() === ''
-                    ? 'Silakan pilih bidang untuk melanjutkan pendaftaran.'
-                    : 'Silakan lengkapi form di bawah ini untuk mendaftar.'
-                  )
+                  ? 'Silakan pilih bidang untuk melanjutkan pendaftaran.'
+                  : 'Silakan lengkapi form di bawah ini untuk mendaftar.'
+                )
               }
             </p>
           </div>
 
           {/* Bidang Selection */}
-          <div>
+          <div className="form-input">
             <label htmlFor="bidang" className="block text-sm font-semibold text-accent mb-2">
               Bidang <span className="text-accent">*</span>
             </label>
@@ -417,7 +459,7 @@ export default function RegistrationForm() {
           {/* Double Category - Required */}
           <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/30 to-muted/30 rounded-lg border border-accent/20">
             <h4 className="text-lg font-semibold text-accent">ⓘ Kategori Double (Wajib)</h4>
-            
+
             {/* Contact message for disabled section */}
             {isDoubleDisabled && (
               <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
@@ -427,10 +469,10 @@ export default function RegistrationForm() {
                 </span>
               </div>
             )}
-            
+
             <div className="grid md:grid-cols-2 gap-4">
               {/* Double Player 1 */}
-              <div>
+              <div className="form-input">
                 <label htmlFor="doublePlayer1Name" className="block text-sm font-semibold text-accent mb-2">
                   Nama Pemain 1 <span className="text-accent">*</span>
                 </label>
@@ -443,21 +485,19 @@ export default function RegistrationForm() {
                   placeholder="Nama lengkap pemain 1"
                   required
                   disabled={isFormDisabled || (existingData?.doublePlayer1Name ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                    errors.doublePlayer1Name ? 'border-red-400' : 'border-border'
-                  } ${
-                    isFormDisabled ? 
-                    'opacity-30 cursor-not-allowed bg-input/50' :
-                    (existingData?.doublePlayer1Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer1Name ? 'border-red-400' : 'border-border'
+                    } ${isFormDisabled ?
+                      'opacity-30 cursor-not-allowed bg-input/50' :
+                      (existingData?.doublePlayer1Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                        'bg-input/50'
+                    }`}
                 />
                 {errors.doublePlayer1Name && (
                   <p className="mt-1 text-sm text-red-400">{errors.doublePlayer1Name}</p>
                 )}
               </div>
 
-              <div>
+              <div className="form-input">
                 <label htmlFor="doublePlayer1Phone" className="block text-sm font-semibold text-accent mb-2">
                   No. HP Pemain 1 <span className="text-accent">*</span>
                 </label>
@@ -465,18 +505,22 @@ export default function RegistrationForm() {
                   type="tel"
                   id="doublePlayer1Phone"
                   name="doublePlayer1Phone"
-                  value={formData.doublePlayer1Phone}
+                  value={
+                    (existingData?.doublePlayer1Phone ?? '') !== ''
+                      ? maskPhoneNumber(existingData?.doublePlayer1Phone || '')
+                      : formData.doublePlayer1Phone
+                  }
                   onChange={handleInputChange}
                   placeholder="08xxxxxxxxxx"
+                  pattern="08[0-9]{8,10}"
+                  inputMode="numeric"
                   required
                   disabled={isFormDisabled || (existingData?.doublePlayer1Phone ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                    errors.doublePlayer1Phone ? 'border-red-400' : 'border-border'
-                  } ${
-                    isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
-                    (existingData?.doublePlayer1Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer1Phone ? 'border-red-400' : 'border-border'
+                    } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
+                      (existingData?.doublePlayer1Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                        'bg-input/50'
+                    }`}
                 />
                 {errors.doublePlayer1Phone && (
                   <p className="mt-1 text-sm text-red-400">{errors.doublePlayer1Phone}</p>
@@ -484,7 +528,7 @@ export default function RegistrationForm() {
               </div>
 
               {/* Double Player 2 */}
-              <div>
+              <div className="form-input">
                 <label htmlFor="doublePlayer2Name" className="block text-sm font-semibold text-accent mb-2">
                   Nama Pemain 2 <span className="text-accent">*</span>
                 </label>
@@ -497,20 +541,18 @@ export default function RegistrationForm() {
                   placeholder="Nama lengkap pemain 2"
                   required
                   disabled={isFormDisabled || (existingData?.doublePlayer2Name ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                    errors.doublePlayer2Name ? 'border-red-400' : 'border-border'
-                  } ${
-                    isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input' : 
-                    (existingData?.doublePlayer2Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer2Name ? 'border-red-400' : 'border-border'
+                    } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input' :
+                      (existingData?.doublePlayer2Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                        'bg-input/50'
+                    }`}
                 />
                 {errors.doublePlayer2Name && (
                   <p className="mt-1 text-sm text-red-400">{errors.doublePlayer2Name}</p>
                 )}
               </div>
 
-              <div>
+              <div className="form-input">
                 <label htmlFor="doublePlayer2Phone" className="block text-sm font-semibold text-accent mb-2">
                   No. HP Pemain 2 <span className="text-accent">*</span>
                 </label>
@@ -518,18 +560,23 @@ export default function RegistrationForm() {
                   type="tel"
                   id="doublePlayer2Phone"
                   name="doublePlayer2Phone"
-                  value={formData.doublePlayer2Phone}
+                  value={
+                    (existingData?.doublePlayer2Phone ?? '') !== ''
+                      ? maskPhoneNumber(existingData?.doublePlayer2Phone || '')
+                      : formData.doublePlayer2Phone
+                  }
                   onChange={handleInputChange}
                   placeholder="08xxxxxxxxxx"
+                  pattern="08[0-9]{8,10}"
+
+                  inputMode="numeric"
                   required
                   disabled={isFormDisabled || (existingData?.doublePlayer2Phone ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                    errors.doublePlayer2Phone ? 'border-red-400' : 'border-border'
-                  } ${
-                    isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
-                    (existingData?.doublePlayer2Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer2Phone ? 'border-red-400' : 'border-border'
+                    } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
+                      (existingData?.doublePlayer2Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                        'bg-input/50'
+                    }`}
                 />
                 {errors.doublePlayer2Phone && (
                   <p className="mt-1 text-sm text-red-400">{errors.doublePlayer2Phone}</p>
@@ -554,7 +601,7 @@ export default function RegistrationForm() {
               </div>
             )}
 
-            <div>
+            <div className="form-input">
               <label htmlFor="singleWomanName" className="block text-sm font-semibold text-accent mb-2">
                 Nama Lengkap <span className="text-muted-foreground">(Opsional)</span>
               </label>
@@ -566,20 +613,18 @@ export default function RegistrationForm() {
                 onChange={handleInputChange}
                 placeholder="Nama lengkap peserta putri (opsional)"
                 disabled={isFormDisabled || (existingData?.singleWomanName ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                  errors.singleWomanName ? 'border-red-400' : 'border-border'
-                } ${
-                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
-                  (existingData?.singleWomanName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleWomanName ? 'border-red-400' : 'border-border'
+                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
+                    (existingData?.singleWomanName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                      'bg-input/50'
+                  }`}
               />
               {errors.singleWomanName && (
                 <p className="mt-1 text-sm text-red-400">{errors.singleWomanName}</p>
               )}
             </div>
 
-            <div>
+            <div className="form-input">
               <label htmlFor="singleWomanPhone" className="block text-sm font-semibold text-accent mb-2">
                 Nomor Handphone (WA) <span className="text-muted-foreground">(Opsional)</span>
               </label>
@@ -587,17 +632,22 @@ export default function RegistrationForm() {
                 type="tel"
                 id="singleWomanPhone"
                 name="singleWomanPhone"
-                value={formData.singleWomanPhone}
+                value={
+                  (existingData?.singleWomanPhone ?? '') !== ''
+                    ? maskPhoneNumber(existingData?.singleWomanPhone || '')
+                    : formData.singleWomanPhone
+                }
                 onChange={handleInputChange}
                 placeholder="08xxxxxxxxxx (opsional)"
+                pattern="08[0-9]{8,10}"
+
+                inputMode="numeric"
                 disabled={isFormDisabled || (existingData?.singleWomanPhone ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                  errors.singleWomanPhone ? 'border-red-400' : 'border-border'
-                } ${
-                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
-                  (existingData?.singleWomanPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleWomanPhone ? 'border-red-400' : 'border-border'
+                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
+                    (existingData?.singleWomanPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                      'bg-input/50'
+                  }`}
               />
               {errors.singleWomanPhone && (
                 <p className="mt-1 text-sm text-red-400">{errors.singleWomanPhone}</p>
@@ -619,7 +669,7 @@ export default function RegistrationForm() {
               </div>
             )}
 
-            <div>
+            <div className="form-input">
               <label htmlFor="singleManName" className="block text-sm font-semibold text-accent mb-2">
                 Nama Lengkap <span className="text-muted-foreground">(Opsional)</span>
               </label>
@@ -630,21 +680,19 @@ export default function RegistrationForm() {
                 value={formData.singleManName}
                 onChange={handleInputChange}
                 placeholder="Nama lengkap peserta putra (opsional)"
-                disabled={isFormDisabled || ( existingData?.singleManName ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                  errors.singleManName ? 'border-red-400' : 'border-border'
-                } ${
-                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
-                  (existingData?.singleManName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                }`}
+                disabled={isFormDisabled || (existingData?.singleManName ?? '') !== ''}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleManName ? 'border-red-400' : 'border-border'
+                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
+                    (existingData?.singleManName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                      'bg-input/50'
+                  }`}
               />
               {errors.singleManName && (
                 <p className="mt-1 text-sm text-red-400">{errors.singleManName}</p>
               )}
             </div>
 
-            <div>
+            <div className="form-input">
               <label htmlFor="singleManPhone" className="block text-sm font-semibold text-accent mb-2">
                 Nomor Handphone (WA) <span className="text-muted-foreground">(Opsional)</span>
               </label>
@@ -652,17 +700,22 @@ export default function RegistrationForm() {
                 type="tel"
                 id="singleManPhone"
                 name="singleManPhone"
-                value={formData.singleManPhone}
+                value={
+                  (existingData?.singleManPhone ?? '') !== ''
+                    ? maskPhoneNumber(existingData?.singleManPhone || '')
+                    : formData.singleManPhone
+                }
                 onChange={handleInputChange}
                 placeholder="08xxxxxxxxxx (opsional)"
+                pattern="08[0-9]{8,10}"
+
+                inputMode="numeric"
                 disabled={isFormDisabled || (existingData?.singleManPhone ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
-                  errors.singleManPhone ? 'border-red-400' : 'border-border'
-                } ${
-                  isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' : 
-                  (existingData?.singleManPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                    'bg-input/50'
-                }`}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleManPhone ? 'border-red-400' : 'border-border'
+                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
+                    (existingData?.singleManPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
+                      'bg-input/50'
+                  }`}
               />
               {errors.singleManPhone && (
                 <p className="mt-1 text-sm text-red-400">{errors.singleManPhone}</p>
@@ -674,7 +727,7 @@ export default function RegistrationForm() {
           <button
             type="submit"
             disabled={isSubmitting || isFormDisabled}
-            className={`w-full py-4 px-6 rounded-lg font-bold text-slate-900 text-lg transition-all transform border border-accent-400/50 ${isSubmitting || isFormDisabled
+            className={`w-full py-4 px-6 rounded-lg font-bold text-lg transition-all transform border border-accent-400/50 ${isSubmitting || isFormDisabled
               ? 'bg-input cursor-not-allowed text-muted-foreground'
               : 'bg-gradient-to-r from-accent to-accent hover:from-accent hover:to-accent hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-accent/25 text-accent-foreground'
               }`}
@@ -694,11 +747,13 @@ export default function RegistrationForm() {
 
         {/* Message Display */}
         {message && (
-          <div className={`mt-6 p-4 rounded-lg backdrop-blur-sm ${message.includes('berhasil')
-            ? 'bg-green-900/50 border border-green-400/50 text-green-300'
-            : 'bg-red-900/50 border border-red-400/50 text-red-300'
-            }`}>
-            {message}
+          <div className="bg-black rounded-lg">
+            <div className={`mt-6 p-4 rounded-lg backdrop-blur-sm ${message.includes('berhasil')
+              ? 'bg-green-900/50 border border-green-400/50 text-green-300'
+              : 'bg-red-900/70 border border-red-400/50 text-red-300'
+              }`}>
+              {message}
+            </div>
           </div>
         )}
 
