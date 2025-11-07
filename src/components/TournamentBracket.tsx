@@ -85,22 +85,22 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
     const isTeam2Winner = match.winnerId === match.team2?.id
 
     return (
-      <div className="bg-card border border-accent/20 rounded-lg p-3 mb-4 min-w-[200px]">
-        <div className={`flex items-center justify-between p-2 rounded ${isTeam1Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
+      <div className="bg-card border border-accent/20 rounded-lg p-3 mb-4 min-w-[260px]">
+        <div className={`flex items-center justify-between p-3 rounded ${isTeam1Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
           }`}>
-          <span className={`font-medium ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'}`}>
+          <span className={`font-medium text-sm truncate max-w-[160px] ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'}`} title={team1Name}>
             {team1Name}
           </span>
-          <span className={`font-bold text-lg ${isTeam1Winner ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+          <span className={`font-bold text-lg ml-3 ${isTeam1Winner ? 'text-emerald-400' : 'text-muted-foreground'}`}>
             {match.team1Score ?? '-'}
           </span>
         </div>
-        <div className={`flex items-center justify-between p-2 rounded mt-1 ${isTeam2Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
+        <div className={`flex items-center justify-between p-3 rounded mt-1 ${isTeam2Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
           }`}>
-          <span className={`font-medium ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'}`}>
+          <span className={`font-medium text-sm truncate max-w-[160px] ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'}`} title={team2Name}>
             {team2Name}
           </span>
-          <span className={`font-bold text-lg ${isTeam2Winner ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+          <span className={`font-bold text-lg ml-3 ${isTeam2Winner ? 'text-emerald-400' : 'text-muted-foreground'}`}>
             {match.team2Score ?? '-'}
           </span>
         </div>
@@ -174,7 +174,7 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
                 return (
                   <React.Fragment key={roundNum}>
                     {/* Round Column */}
-                    <div className="flex flex-col" style={{ width: '220px' }}>
+                    <div className="flex flex-col" style={{ width: '280px' }}>
                       <h2 className="text-xl font-bold text-foreground mb-4 text-center">
                         {getRoundName(roundNum, totalRounds)}
                       </h2>
@@ -208,7 +208,7 @@ export function TournamentBracket({ matches, title = "Bagan Turnamen" }: Tournam
                 <div className="text-center">
                   <Award className="text-accent mx-auto mb-3" size={48} />
                   <h2 className="text-xl font-bold text-foreground mb-3">Juara</h2>
-                  <div className="bg-gradient-to-r from-accent/80 to-accent text-accent-foreground font-bold text-xl py-4 px-6 rounded-lg shadow-lg border border-accent/30">
+                  <div className="bg-gradient-to-r from-accent/80 to-accent text-accent-foreground font-bold text-xl py-4 px-6 rounded-lg shadow-lg border border-accent/30 w-80">
                     {champion}
                   </div>
                 </div>

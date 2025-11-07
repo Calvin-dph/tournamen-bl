@@ -512,11 +512,11 @@ export default function TournamentDetailPage({ params }: PageProps) {
                               : match.status === 'in_progress' ? 'Sedang Berlangsung' : match.scheduled_at ? formatDate(match.scheduled_at) : 'Terjadwal'
 
                             return (
-                              <div key={match.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-secondary border border-border rounded-lg p-3 gap-2">
-                                <div className="flex-1 min-w-0">
+                              <div key={match.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-secondary border border-border rounded-lg p-3 gap-2 w-full">
+                                <div className="flex-1 w-100">
                                   <div className="text-sm text-foreground flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                     <span className="font-medium truncate">{team1?.name || 'TBD'}</span>
-                                    <span className="text-accent text-xs sm:text-sm">vs</span>
+                                    <span className="text-accent text-xs sm:text-sm flex-shrink-0">vs</span>
                                     <span className="font-medium truncate">{team2?.name || 'TBD'}</span>
                                   </div>
                                 </div>

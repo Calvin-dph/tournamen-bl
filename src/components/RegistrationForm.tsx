@@ -3,17 +3,134 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface Player {
+  player1Name: string;
+  player1Phone: string;
+  player2Name: string;
+  player2Phone: string;
+  [key: string]: string; // Add index signature for dynamic access
+}
+
+interface SinglePlayer {
+  name: string;
+  phone: string;
+  [key: string]: string; // Add index signature for dynamic access
+}
+
 interface FormData {
   bidang: string;
-  singleWomanName: string;
-  singleWomanPhone: string;
-  singleManName: string;
-  singleManPhone: string;
-  doublePlayer1Name: string;
-  doublePlayer1Phone: string;
-  doublePlayer2Name: string;
-  doublePlayer2Phone: string;
+  single: SinglePlayer;
+  double1: Player;
+  double2: Player;
 }
+
+interface FormErrors {
+  bidang?: string;
+  single?: {
+    name?: string;
+    phone?: string;
+  };
+  double1?: {
+    player1Name?: string;
+    player1Phone?: string;
+    player2Name?: string;
+    player2Phone?: string;
+  };
+  double2?: {
+    player1Name?: string;
+    player1Phone?: string;
+    player2Name?: string;
+    player2Phone?: string;
+  };
+}
+
+// Configuration for form sections
+interface SectionConfig {
+  key: keyof FormData;
+  title: string;
+  icon: string;
+  required: boolean;
+  type: 'single' | 'double';
+  fields: Array<{
+    key: string;
+    label: string;
+    required: boolean;
+    type: 'text' | 'tel';
+    placeholder: string;
+  }>;
+}
+
+const setErrorForField = (
+  errors: FormErrors,
+  sectionKey: keyof FormData,
+  fieldKey: string,
+  message: string
+): void => {
+  if (!errors[sectionKey]) {
+    if (sectionKey === 'single') {
+      errors.single = {};
+    } else if (sectionKey === 'double1') {
+      errors.double1 = {};
+    } else if (sectionKey === 'double2') {
+      errors.double2 = {};
+    }
+  }
+  
+  const sectionErrors = errors[sectionKey];
+  if (sectionErrors) {
+    (sectionErrors as Record<string, string>)[fieldKey] = message;
+  }
+};
+
+const getErrorForField = (
+  errors: FormErrors,
+  sectionKey: keyof FormData,
+  fieldKey: string
+): string | undefined => {
+  const sectionErrors = errors[sectionKey];
+  if (!sectionErrors) return undefined;
+  return (sectionErrors as Record<string, string>)[fieldKey];
+};
+
+const formSections: SectionConfig[] = [
+  {
+    key: 'double1',
+    title: 'Kategori Ganda 1 (Wajib)',
+    icon: 'ⓘ',
+    required: true,
+    type: 'double',
+    fields: [
+      { key: 'player1Name', label: 'Nama Pemain 1', required: true, type: 'text', placeholder: 'Nama lengkap pemain 1' },
+      { key: 'player1Phone', label: 'No. HP Pemain 1', required: true, type: 'tel', placeholder: '08xxxxxxxxxx' },
+      { key: 'player2Name', label: 'Nama Pemain 2', required: true, type: 'text', placeholder: 'Nama lengkap pemain 2' },
+      { key: 'player2Phone', label: 'No. HP Pemain 2', required: true, type: 'tel', placeholder: '08xxxxxxxxxx' },
+    ]
+  },
+  {
+    key: 'double2',
+    title: 'Kategori Ganda 2 (Opsional)',
+    icon: '⚬',
+    required: false,
+    type: 'double',
+    fields: [
+      { key: 'player1Name', label: 'Nama Pemain 1', required: false, type: 'text', placeholder: 'Nama lengkap pemain 1 (opsional)' },
+      { key: 'player1Phone', label: 'No. HP Pemain 1', required: false, type: 'tel', placeholder: '08xxxxxxxxxx (opsional)' },
+      { key: 'player2Name', label: 'Nama Pemain 2', required: false, type: 'text', placeholder: 'Nama lengkap pemain 2 (opsional)' },
+      { key: 'player2Phone', label: 'No. HP Pemain 2', required: false, type: 'tel', placeholder: '08xxxxxxxxxx (opsional)' },
+    ]
+  },
+  {
+    key: 'single',
+    title: 'Kategori Single (Opsional)',
+    icon: '◉',
+    required: false,
+    type: 'single',
+    fields: [
+      { key: 'name', label: 'Nama Lengkap', required: false, type: 'text', placeholder: 'Nama lengkap peserta (opsional)' },
+      { key: 'phone', label: 'Nomor Handphone (WA)', required: false, type: 'tel', placeholder: '08xxxxxxxxxx (opsional)' },
+    ]
+  }
+];
 
 // Custom debounce hook
 const useDebounce = (value: string, delay: number) => {
@@ -43,11 +160,6 @@ const formatPhoneNumber = (value: string): string => {
   return limited;
 };
 
-// Check if field is a phone number field
-const isPhoneField = (fieldName: string): boolean => {
-  return fieldName.includes('Phone');
-};
-
 // Function to mask phone number for display
 const maskPhoneNumber = (phoneNumber: string): string => {
   if (!phoneNumber || phoneNumber.length < 4) return phoneNumber;
@@ -65,42 +177,32 @@ export default function RegistrationForm() {
   const [existingData, setExistingData] = useState<FormData | null>(null);
   const [formData, setFormData] = useState<FormData>({
     bidang: '',
-    singleWomanName: '',
-    singleWomanPhone: '',
-    singleManName: '',
-    singleManPhone: '',
-    doublePlayer1Name: '',
-    doublePlayer1Phone: '',
-    doublePlayer2Name: '',
-    doublePlayer2Phone: '',
+    single: {
+      name: '',
+      phone: '',
+    },
+    double1: {
+      player1Name: '',
+      player1Phone: '',
+      player2Name: '',
+      player2Phone: '',
+    },
+    double2: {
+      player1Name: '',
+      player1Phone: '',
+      player2Name: '',
+      player2Phone: '',
+    },
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   // Debounce bidang input
   const debouncedBidang = useDebounce(formData.bidang, 500);
 
   // Check if form fields should be disabled
   const isFormDisabled = isCheckingBidang || formData.bidang.trim() === '';
-
-  // Helper functions to check if specific sections are disabled due to existing data
-  const isDoubleDisabled = existingData && (
-    (existingData.doublePlayer1Name ?? '') !== '' ||
-    (existingData.doublePlayer1Phone ?? '') !== '' ||
-    (existingData.doublePlayer2Name ?? '') !== '' ||
-    (existingData.doublePlayer2Phone ?? '') !== ''
-  );
-
-  const isSingleWomanDisabled = existingData && (
-    (existingData.singleWomanName ?? '') !== '' ||
-    (existingData.singleWomanPhone ?? '') !== ''
-  );
-
-  const isSingleManDisabled = existingData && (
-    (existingData.singleManName ?? '') !== '' ||
-    (existingData.singleManPhone ?? '') !== ''
-  );
 
   // Fetch bidang options and existing emails on component mount
   useEffect(() => {
@@ -151,27 +253,43 @@ export default function RegistrationForm() {
           // Prefill form with existing data
           setFormData(prev => ({
             ...prev,
-            singleWomanName: result.registration.singleWomanName || '',
-            singleWomanPhone: result.registration.singleWomanPhone || '',
-            singleManName: result.registration.singleManName || '',
-            singleManPhone: result.registration.singleManPhone || '',
-            doublePlayer1Name: result.registration.doublePlayer1Name || '',
-            doublePlayer1Phone: result.registration.doublePlayer1Phone || '',
-            doublePlayer2Name: result.registration.doublePlayer2Name || '',
-            doublePlayer2Phone: result.registration.doublePlayer2Phone || '',
+            single: {
+              name: result.registration.single?.name || '',
+              phone: result.registration.single?.phone || '',
+            },
+            double1: {
+              player1Name: result.registration.double1?.player1Name || '',
+              player1Phone: result.registration.double1?.player1Phone || '',
+              player2Name: result.registration.double1?.player2Name || '',
+              player2Phone: result.registration.double1?.player2Phone || '',
+            },
+            double2: {
+              player1Name: result.registration.double2?.player1Name || '',
+              player1Phone: result.registration.double2?.player1Phone || '',
+              player2Name: result.registration.double2?.player2Name || '',
+              player2Phone: result.registration.double2?.player2Phone || '',
+            },
           }));
         } else {
           setExistingData(null);
           setFormData(prev => ({
             ...prev,
-            singleWomanName: '',
-            singleWomanPhone: '',
-            singleManName: '',
-            singleManPhone: '',
-            doublePlayer1Name: '',
-            doublePlayer1Phone: '',
-            doublePlayer2Name: '',
-            doublePlayer2Phone: '',
+            single: {
+              name: '',
+              phone: '',
+            },
+            double1: {
+              player1Name: '',
+              player1Phone: '',
+              player2Name: '',
+              player2Phone: '',
+            },
+            double2: {
+              player1Name: '',
+              player1Phone: '',
+              player2Name: '',
+              player2Phone: '',
+            },
           }));
         }
       }
@@ -192,86 +310,89 @@ export default function RegistrationForm() {
   }, [debouncedBidang, checkBidangExists]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
+    const newErrors: FormErrors = {};
 
     if (!formData.bidang.trim()) {
       newErrors.bidang = 'Bidang harus dipilih';
     }
 
-    // Double team validation (required)
-    if (!formData.doublePlayer1Name.trim()) {
-      newErrors.doublePlayer1Name = 'Nama pemain double 1 harus diisi';
-    } else if (formData.doublePlayer1Name.trim().length < 2) {
-      newErrors.doublePlayer1Name = 'Nama pemain harus minimal 2 karakter';
-    }
+    // Validate each section based on configuration
+    formSections.forEach(section => {
+      const sectionData = formData[section.key] as Player | SinglePlayer;
+      const hasAnyData = section.fields.some(field => {
+        const value = sectionData[field.key];
+        return value && value.trim() !== '';
+      });
 
-    if (!formData.doublePlayer2Name.trim()) {
-      newErrors.doublePlayer2Name = 'Nama pemain double 2 harus diisi';
-    } else if (formData.doublePlayer2Name.trim().length < 2) {
-      newErrors.doublePlayer2Name = 'Nama pemain harus minimal 2 karakter';
-    }
+      // If section is required OR has any data, validate all required fields in that section
+      if (section.required || hasAnyData) {
+        section.fields.forEach(field => {
+          const value = sectionData[field.key];
+          const trimmedValue = value ? value.trim() : '';
 
-    if (!formData.doublePlayer1Phone.trim()) {
-      newErrors.doublePlayer1Phone = 'Nomor handphone pemain double 1 harus diisi';
-    }
+          // Check if field is required (either section is required and field is required, or section has data and field is required for consistency)
+          const isFieldRequired = (section.required && field.required) || (hasAnyData && field.required);
 
-    if (!formData.doublePlayer2Phone.trim()) {
-      newErrors.doublePlayer2Phone = 'Nomor handphone pemain double 2 harus diisi';
-    }
-
-    // Single woman validation (optional, but if name is filled, phone is required)
-    if (formData.singleWomanName.trim()) {
-      if (formData.singleWomanName.trim().length < 2) {
-        newErrors.singleWomanName = 'Nama pemain harus minimal 2 karakter';
+          if (isFieldRequired && !trimmedValue) {
+            setErrorForField(newErrors, section.key, field.key, `${field.label} harus diisi`);
+          } else if (trimmedValue && field.type === 'text' && trimmedValue.length < 2) {
+            setErrorForField(newErrors, section.key, field.key, 'Nama pemain harus minimal 2 karakter');
+          } else if (trimmedValue && field.type === 'tel') {
+            // Phone number validation
+            if (trimmedValue.length < 10) {
+              setErrorForField(newErrors, section.key, field.key, 'Nomor handphone minimal 10 digit');
+            } else if (!trimmedValue.startsWith('08')) {
+              setErrorForField(newErrors, section.key, field.key, 'Nomor handphone harus dimulai dengan 08');
+            } else if (!/^\d+$/.test(trimmedValue)) {
+              setErrorForField(newErrors, section.key, field.key, 'Nomor handphone hanya boleh berisi angka');
+            }
+          }
+        });
       }
-      if (!formData.singleWomanPhone.trim()) {
-        newErrors.singleWomanPhone = 'Nomor handphone wajib diisi jika nama diisi';
-      }
-    }
 
-    // Single man validation (optional, but if name is filled, phone is required)
-    if (formData.singleManName.trim()) {
-      if (formData.singleManName.trim().length < 2) {
-        newErrors.singleManName = 'Nama pemain harus minimal 2 karakter';
-      }
-      if (!formData.singleManPhone.trim()) {
-        newErrors.singleManPhone = 'Nomor handphone wajib diisi jika nama diisi';
-      }
-    }
+      // Special validation for single: if name is filled, phone is required
+      if (section.key === 'single' && !section.required) {
+        const singleData = sectionData as SinglePlayer;
+        const nameValue = singleData.name?.trim();
+        const phoneValue = singleData.phone?.trim();
 
-    // Phone number validation - Indonesian format
-    const phoneFields = ['doublePlayer1Phone', 'doublePlayer2Phone', 'singleWomanPhone', 'singleManPhone'] as const;
-
-    phoneFields.forEach(field => {
-      const phoneValue = formData[field].trim();
-      if (phoneValue) {
-        // Check if it's a valid Indonesian phone number (starts with 08 and has 10-12 digits)
-        if (phoneValue.length < 10) {
-          newErrors[field] = 'Nomor handphone minimal 10 digit';
-        } else if (!phoneValue.startsWith('08')) {
-          newErrors[field] = 'Nomor handphone harus dimulai dengan 08';
-        } else if (!/^\d+$/.test(phoneValue)) {
-          newErrors[field] = 'Nomor handphone hanya boleh berisi angka';
+        if (nameValue && !phoneValue) {
+          setErrorForField(newErrors, section.key, 'phone', 'Nomor handphone wajib diisi jika nama diisi');
         }
       }
     });
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).filter(key => key !== 'bidang' || newErrors.bidang).length === 0;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
+    // Handle bidang field separately
+    if (name === 'bidang') {
+      setFormData(prev => ({
+        ...prev,
+        bidang: value
+      }));
+      return;
+    }
+
+    // Parse nested field names like "double1.player1Name" or "single.name"
+    const [section, field] = name.split('.');
+    
     // Format phone number fields
     let formattedValue = value;
-    if (isPhoneField(name)) {
+    if (field && field.includes('Phone')) {
       formattedValue = formatPhoneNumber(value);
     }
 
     setFormData(prev => ({
       ...prev,
-      [name]: formattedValue
+      [section]: {
+        ...(prev[section as keyof FormData] as Player | SinglePlayer),
+        [field]: formattedValue
+      }
     }));
   };
 
@@ -294,14 +415,22 @@ export default function RegistrationForm() {
       // Combine current form data with existing data to ensure complete payload
       const completeData = {
         bidang: formData.bidang,
-        singleWomanName: formData.singleWomanName || (existingData?.singleWomanName || ''),
-        singleWomanPhone: formData.singleWomanPhone || (existingData?.singleWomanPhone || ''),
-        singleManName: formData.singleManName || (existingData?.singleManName || ''),
-        singleManPhone: formData.singleManPhone || (existingData?.singleManPhone || ''),
-        doublePlayer1Name: formData.doublePlayer1Name || (existingData?.doublePlayer1Name || ''),
-        doublePlayer1Phone: formData.doublePlayer1Phone || (existingData?.doublePlayer1Phone || ''),
-        doublePlayer2Name: formData.doublePlayer2Name || (existingData?.doublePlayer2Name || ''),
-        doublePlayer2Phone: formData.doublePlayer2Phone || (existingData?.doublePlayer2Phone || ''),
+        single: {
+          name: formData.single.name || (existingData?.single?.name || ''),
+          phone: formData.single.phone || (existingData?.single?.phone || ''),
+        },
+        double1: {
+          player1Name: formData.double1.player1Name || (existingData?.double1?.player1Name || ''),
+          player1Phone: formData.double1.player1Phone || (existingData?.double1?.player1Phone || ''),
+          player2Name: formData.double1.player2Name || (existingData?.double1?.player2Name || ''),
+          player2Phone: formData.double1.player2Phone || (existingData?.double1?.player2Phone || ''),
+        },
+        double2: {
+          player1Name: formData.double2.player1Name || (existingData?.double2?.player1Name || ''),
+          player1Phone: formData.double2.player1Phone || (existingData?.double2?.player1Phone || ''),
+          player2Name: formData.double2.player2Name || (existingData?.double2?.player2Name || ''),
+          player2Phone: formData.double2.player2Phone || (existingData?.double2?.player2Phone || ''),
+        },
       };
 
       const response = await fetch('/api/registrations', {
@@ -325,14 +454,22 @@ export default function RegistrationForm() {
         );
         setFormData({
           bidang: '',
-          singleWomanName: '',
-          singleWomanPhone: '',
-          singleManName: '',
-          singleManPhone: '',
-          doublePlayer1Name: '',
-          doublePlayer1Phone: '',
-          doublePlayer2Name: '',
-          doublePlayer2Phone: '',
+          single: {
+            name: '',
+            phone: '',
+          },
+          double1: {
+            player1Name: '',
+            player1Phone: '',
+            player2Name: '',
+            player2Phone: '',
+          },
+          double2: {
+            player1Name: '',
+            player1Phone: '',
+            player2Name: '',
+            player2Phone: '',
+          },
         });
         // Reset bidang status
         setExistingData(null);
@@ -374,10 +511,10 @@ export default function RegistrationForm() {
           <h3 className="font-semibold text-accent mb-2">📋 Petunjuk Pendaftaran:</h3>
           <ul className="text-sm text-foreground space-y-1">
             <li>• Pilih bidang Anda dari dropdown menu yang tersedia</li>
-            <li>• <strong>Wajib diisi:</strong> Kategori Double (2 pemain dengan nomor handphone masing-masing)</li>
-            <li>• <strong>Opsional:</strong> Kategori Single Woman (1 pemain) dan/atau Single Man (1 pemain)</li>
-            <li>• Maksimal 4 peserta per bidang: 2 double + 1 single woman + 1 single man</li>
-            <li>• Minimal harus mengisi kategori Double untuk dapat mendaftar</li>
+            <li>• <strong>Wajib diisi:</strong> Kategori Ganda 1 (2 pemain dengan nomor handphone masing-masing)</li>
+            <li>• <strong>Opsional:</strong> Kategori Ganda 2 (2 pemain) dan/atau Single (1 pemain)</li>
+            <li>• Maksimal 5 peserta per bidang: 2 ganda (4 orang) + 1 single (1 orang)</li>
+            <li>• Minimal harus mengisi kategori Ganda 1 untuk dapat mendaftar</li>
             <li>• Nomor handphone harus aktif WhatsApp untuk komunikasi turnamen</li>
             <li>• Format nomor handphone: dimulai dengan 08, contoh 08123456789 (10-12 digit, hanya angka)</li>
           </ul>
@@ -434,7 +571,7 @@ export default function RegistrationForm() {
               onChange={handleInputChange}
               required
               disabled={isLoadingBidang}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground bg-input backdrop-blur-sm placeholder-muted-foreground ${errors.bidang ? 'border-destructive' : 'border-border'} ${isLoadingBidang || isFormDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground bg-input backdrop-blur-sm placeholder-muted-foreground ${errors.bidang ? 'border-destructive' : 'border-border'} ${isLoadingBidang ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <option value="" className="bg-background text-foreground">
                 {isLoadingBidang ? 'Memuat bidang...' : 'Pilih Bidang'}
@@ -456,272 +593,84 @@ export default function RegistrationForm() {
             )}
           </div>
 
-          {/* Double Category - Required */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/30 to-muted/30 rounded-lg border border-accent/20">
-            <h4 className="text-lg font-semibold text-accent">ⓘ Kategori Double (Wajib)</h4>
+          {/* Dynamic Form Sections */}
+          {formSections.map(section => {
+            const sectionData = formData[section.key] as Player | SinglePlayer;
+            
+            // Check if section is disabled due to existing data
+            const isSectionDisabled = existingData && section.fields.some(field => {
+              const existingSection = existingData[section.key] as Player | SinglePlayer | undefined;
+              const existingValue = existingSection?.[field.key];
+              return existingValue && existingValue.trim() !== '';
+            });
 
-            {/* Contact message for disabled section */}
-            {isDoubleDisabled && (
-              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
-                <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
-                <span className="text-amber-800 text-sm leading-relaxed">
-                  Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
-                </span>
-              </div>
-            )}
+            return (
+              <div key={section.key} className={`space-y-4 p-4 rounded-lg border ${
+                section.required 
+                  ? 'bg-gradient-to-r from-secondary/30 to-muted/30 border-accent/20' 
+                  : 'bg-gradient-to-r from-secondary/20 to-muted/20 border-accent/10'
+              }`}>
+                <h4 className="text-lg font-semibold text-accent">{section.icon} {section.title}</h4>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Double Player 1 */}
-              <div className="form-input">
-                <label htmlFor="doublePlayer1Name" className="block text-sm font-semibold text-accent mb-2">
-                  Nama Pemain 1 <span className="text-accent">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="doublePlayer1Name"
-                  name="doublePlayer1Name"
-                  value={formData.doublePlayer1Name}
-                  onChange={handleInputChange}
-                  placeholder="Nama lengkap pemain 1"
-                  required
-                  disabled={isFormDisabled || (existingData?.doublePlayer1Name ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer1Name ? 'border-red-400' : 'border-border'
-                    } ${isFormDisabled ?
-                      'opacity-30 cursor-not-allowed bg-input/50' :
-                      (existingData?.doublePlayer1Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                        'bg-input/50'
-                    }`}
-                />
-                {errors.doublePlayer1Name && (
-                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer1Name}</p>
+                {/* Contact message for disabled section */}
+                {isSectionDisabled && (
+                  <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
+                    <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
+                    <span className="text-amber-800 text-sm leading-relaxed">
+                      Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
+                    </span>
+                  </div>
                 )}
+
+                <div className={`grid gap-4 ${section.type === 'double' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+                  {section.fields.map(field => {
+                    const fieldName = `${section.key}.${field.key}`;
+                    const fieldValue = sectionData[field.key] || '';
+                    const fieldError = getErrorForField(errors, section.key, field.key);
+                    const existingSection = existingData?.[section.key] as Player | SinglePlayer | undefined;
+                    const existingFieldValue = existingSection?.[field.key];
+                    const isFieldDisabled = Boolean(isFormDisabled || (existingFieldValue && existingFieldValue.trim() !== ''));
+
+                    const displayValue = existingFieldValue && existingFieldValue.trim() !== '' && field.type === 'tel'
+                      ? maskPhoneNumber(existingFieldValue)
+                      : fieldValue;
+
+                    return (
+                      <div key={field.key} className="form-input">
+                        <label htmlFor={fieldName} className="block text-sm font-semibold text-accent mb-2">
+                          {field.label} {field.required && <span className="text-accent">*</span>}
+                        </label>
+                        <input
+                          type={field.type}
+                          id={fieldName}
+                          name={fieldName}
+                          value={displayValue}
+                          onChange={handleInputChange}
+                          placeholder={field.placeholder}
+                          pattern={field.type === 'tel' ? '08[0-9]{8,10}' : undefined}
+                          inputMode={field.type === 'tel' ? 'numeric' : undefined}
+                          required={field.required}
+                          disabled={isFieldDisabled}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${
+                            fieldError ? 'border-red-400' : 'border-border'
+                          } ${
+                            isFormDisabled 
+                              ? 'opacity-30 cursor-not-allowed bg-input/50' 
+                              : isFieldDisabled 
+                                ? 'opacity-30 cursor-not-allowed' 
+                                : 'bg-input/50'
+                          }`}
+                        />
+                        {fieldError && (
+                          <p className="mt-1 text-sm text-red-400">{fieldError}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-
-              <div className="form-input">
-                <label htmlFor="doublePlayer1Phone" className="block text-sm font-semibold text-accent mb-2">
-                  No. HP Pemain 1 <span className="text-accent">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="doublePlayer1Phone"
-                  name="doublePlayer1Phone"
-                  value={
-                    (existingData?.doublePlayer1Phone ?? '') !== ''
-                      ? maskPhoneNumber(existingData?.doublePlayer1Phone || '')
-                      : formData.doublePlayer1Phone
-                  }
-                  onChange={handleInputChange}
-                  placeholder="08xxxxxxxxxx"
-                  pattern="08[0-9]{8,10}"
-                  inputMode="numeric"
-                  required
-                  disabled={isFormDisabled || (existingData?.doublePlayer1Phone ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer1Phone ? 'border-red-400' : 'border-border'
-                    } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
-                      (existingData?.doublePlayer1Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                        'bg-input/50'
-                    }`}
-                />
-                {errors.doublePlayer1Phone && (
-                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer1Phone}</p>
-                )}
-              </div>
-
-              {/* Double Player 2 */}
-              <div className="form-input">
-                <label htmlFor="doublePlayer2Name" className="block text-sm font-semibold text-accent mb-2">
-                  Nama Pemain 2 <span className="text-accent">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="doublePlayer2Name"
-                  name="doublePlayer2Name"
-                  value={formData.doublePlayer2Name}
-                  onChange={handleInputChange}
-                  placeholder="Nama lengkap pemain 2"
-                  required
-                  disabled={isFormDisabled || (existingData?.doublePlayer2Name ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer2Name ? 'border-red-400' : 'border-border'
-                    } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input' :
-                      (existingData?.doublePlayer2Name ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                        'bg-input/50'
-                    }`}
-                />
-                {errors.doublePlayer2Name && (
-                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer2Name}</p>
-                )}
-              </div>
-
-              <div className="form-input">
-                <label htmlFor="doublePlayer2Phone" className="block text-sm font-semibold text-accent mb-2">
-                  No. HP Pemain 2 <span className="text-accent">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="doublePlayer2Phone"
-                  name="doublePlayer2Phone"
-                  value={
-                    (existingData?.doublePlayer2Phone ?? '') !== ''
-                      ? maskPhoneNumber(existingData?.doublePlayer2Phone || '')
-                      : formData.doublePlayer2Phone
-                  }
-                  onChange={handleInputChange}
-                  placeholder="08xxxxxxxxxx"
-                  pattern="08[0-9]{8,10}"
-
-                  inputMode="numeric"
-                  required
-                  disabled={isFormDisabled || (existingData?.doublePlayer2Phone ?? '') !== ''}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.doublePlayer2Phone ? 'border-red-400' : 'border-border'
-                    } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
-                      (existingData?.doublePlayer2Phone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                        'bg-input/50'
-                    }`}
-                />
-                {errors.doublePlayer2Phone && (
-                  <p className="mt-1 text-sm text-red-400">{errors.doublePlayer2Phone}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-
-
-          {/* Single Woman - Optional */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/20 to-muted/20 rounded-lg border border-accent/10">
-            <h4 className="text-lg font-semibold text-accent">� Single Putri (Opsional)</h4>
-
-            {/* Contact message for disabled section */}
-            {isSingleWomanDisabled && (
-              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
-                <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
-                <span className="text-amber-800 text-sm leading-relaxed">
-                  Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
-                </span>
-              </div>
-            )}
-
-            <div className="form-input">
-              <label htmlFor="singleWomanName" className="block text-sm font-semibold text-accent mb-2">
-                Nama Lengkap <span className="text-muted-foreground">(Opsional)</span>
-              </label>
-              <input
-                type="text"
-                id="singleWomanName"
-                name="singleWomanName"
-                value={formData.singleWomanName}
-                onChange={handleInputChange}
-                placeholder="Nama lengkap peserta putri (opsional)"
-                disabled={isFormDisabled || (existingData?.singleWomanName ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleWomanName ? 'border-red-400' : 'border-border'
-                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
-                    (existingData?.singleWomanName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                      'bg-input/50'
-                  }`}
-              />
-              {errors.singleWomanName && (
-                <p className="mt-1 text-sm text-red-400">{errors.singleWomanName}</p>
-              )}
-            </div>
-
-            <div className="form-input">
-              <label htmlFor="singleWomanPhone" className="block text-sm font-semibold text-accent mb-2">
-                Nomor Handphone (WA) <span className="text-muted-foreground">(Opsional)</span>
-              </label>
-              <input
-                type="tel"
-                id="singleWomanPhone"
-                name="singleWomanPhone"
-                value={
-                  (existingData?.singleWomanPhone ?? '') !== ''
-                    ? maskPhoneNumber(existingData?.singleWomanPhone || '')
-                    : formData.singleWomanPhone
-                }
-                onChange={handleInputChange}
-                placeholder="08xxxxxxxxxx (opsional)"
-                pattern="08[0-9]{8,10}"
-
-                inputMode="numeric"
-                disabled={isFormDisabled || (existingData?.singleWomanPhone ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleWomanPhone ? 'border-red-400' : 'border-border'
-                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
-                    (existingData?.singleWomanPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                      'bg-input/50'
-                  }`}
-              />
-              {errors.singleWomanPhone && (
-                <p className="mt-1 text-sm text-red-400">{errors.singleWomanPhone}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Single Man - Optional */}
-          <div className="space-y-4 p-4 bg-gradient-to-r from-secondary/20 to-muted/20 rounded-lg border border-accent/10">
-            <h4 className="text-lg font-semibold text-accent">� Single Putra (Opsional)</h4>
-
-            {/* Contact message for disabled section */}
-            {isSingleManDisabled && (
-              <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex items-start gap-2.5">
-                <span className="text-amber-600 font-bold text-lg flex-shrink-0 mt-0.5">⚠️</span>
-                <span className="text-amber-800 text-sm leading-relaxed">
-                  Silahkan hubungi kontak di bawah untuk mengubah peserta yang sudah didaftarkan
-                </span>
-              </div>
-            )}
-
-            <div className="form-input">
-              <label htmlFor="singleManName" className="block text-sm font-semibold text-accent mb-2">
-                Nama Lengkap <span className="text-muted-foreground">(Opsional)</span>
-              </label>
-              <input
-                type="text"
-                id="singleManName"
-                name="singleManName"
-                value={formData.singleManName}
-                onChange={handleInputChange}
-                placeholder="Nama lengkap peserta putra (opsional)"
-                disabled={isFormDisabled || (existingData?.singleManName ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleManName ? 'border-red-400' : 'border-border'
-                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
-                    (existingData?.singleManName ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                      'bg-input/50'
-                  }`}
-              />
-              {errors.singleManName && (
-                <p className="mt-1 text-sm text-red-400">{errors.singleManName}</p>
-              )}
-            </div>
-
-            <div className="form-input">
-              <label htmlFor="singleManPhone" className="block text-sm font-semibold text-accent mb-2">
-                Nomor Handphone (WA) <span className="text-muted-foreground">(Opsional)</span>
-              </label>
-              <input
-                type="tel"
-                id="singleManPhone"
-                name="singleManPhone"
-                value={
-                  (existingData?.singleManPhone ?? '') !== ''
-                    ? maskPhoneNumber(existingData?.singleManPhone || '')
-                    : formData.singleManPhone
-                }
-                onChange={handleInputChange}
-                placeholder="08xxxxxxxxxx (opsional)"
-                pattern="08[0-9]{8,10}"
-
-                inputMode="numeric"
-                disabled={isFormDisabled || (existingData?.singleManPhone ?? '') !== ''}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-foreground backdrop-blur-sm placeholder-muted-foreground ${errors.singleManPhone ? 'border-red-400' : 'border-border'
-                  } ${isFormDisabled ? 'opacity-50 cursor-not-allowed bg-input/50' :
-                    (existingData?.singleManPhone ?? '') !== '' ? 'opacity-30 cursor-not-allowed' :
-                      'bg-input/50'
-                  }`}
-              />
-              {errors.singleManPhone && (
-                <p className="mt-1 text-sm text-red-400">{errors.singleManPhone}</p>
-              )}
-            </div>
-          </div>
+            );
+          })}
 
           {/* Submit Button */}
           <button

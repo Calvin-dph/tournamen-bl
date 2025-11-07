@@ -243,7 +243,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Upcoming Matches */}
             <Card className="animate-fade-in-up">
               <CardHeader>
@@ -264,9 +264,9 @@ export default function Home() {
                       </div>
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-4">
-                          <span className="font-medium">{match.team1_name}</span>
+                          <span className="font-medium text-sm truncate max-w-[120px]" title={match.team1_name}>{match.team1_name}</span>
                           <span className="text-muted-foreground">vs</span>
-                          <span className="font-medium">{match.team2_name}</span>
+                          <span className="font-medium text-sm truncate max-w-[120px]" title={match.team2_name}>{match.team2_name}</span>
                         </div>
                       </div>
                     </div>
@@ -299,13 +299,13 @@ export default function Home() {
                         </span>
                       </div>
                       <div className="text-center">
-                        <div className="flex items-center justify-center gap-4">
-                          <div className="text-right">
+                        <div className="flex items-center justify-center gap-4 w-full">
+                          <div className="text-right w-1/2">
                             <div className="font-medium">{match.team1_name}</div>
                             <div className="text-2xl font-bold text-accent">{match.team1_score}</div>
                           </div>
                           <span className="text-muted-foreground">-</span>
-                          <div className="text-left">
+                          <div className="text-left w-1/2">
                             <div className="font-medium">{match.team2_name}</div>
                             <div className="text-2xl font-bold text-accent">{match.team2_score}</div>
                           </div>

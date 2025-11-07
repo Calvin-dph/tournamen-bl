@@ -3,23 +3,30 @@ import { supabase } from '@/lib/supabase';
 
 export interface RegistrationData {
   bidang: string;
-  type: 'single_women' | 'single_men' | 'double';
+  type: 'single' | 'double';
   player1_name: string;
   player1_phone: string;
   player2_name?: string;
   player2_phone?: string;
 }
 
+interface Player {
+  player1Name: string;
+  player1Phone: string;
+  player2Name: string;
+  player2Phone: string;
+}
+
+interface SinglePlayer {
+  name: string;
+  phone: string;
+}
+
 export interface FormRegistrationData {
   bidang: string;
-  singleWomanName: string;
-  singleWomanPhone: string;
-  singleManName: string;
-  singleManPhone: string;
-  doublePlayer1Name: string;
-  doublePlayer1Phone: string;
-  doublePlayer2Name: string;
-  doublePlayer2Phone: string;
+  single: SinglePlayer;
+  double1: Player;
+  double2: Player;
 }
 
 export async function GET() {
@@ -44,7 +51,7 @@ export async function GET() {
     let totalPlayers = 0;
     registrations?.forEach(registration => {
       // For single type registrations, count as 1 player
-      if (registration.type === 'single_women' || registration.type === 'single_men') {
+      if (registration.type === 'single') {
         totalPlayers += 1;
       }
       // For double type registrations, count as 2 players
@@ -84,23 +91,13 @@ export async function POST(request: Request) {
     }
 
     // Validate required fields
-    const { 
-      bidang, 
-      singleWomanName, 
-      singleWomanPhone, 
-      singleManName, 
-      singleManPhone, 
-      doublePlayer1Name, 
-      doublePlayer1Phone, 
-      doublePlayer2Name, 
-      doublePlayer2Phone 
-    } = registrationData as FormRegistrationData;
+    const { bidang, single, double1, double2 } = registrationData as FormRegistrationData;
 
-    console.log('Received registration data:', { bidang, doublePlayer1Name, doublePlayer1Phone, doublePlayer2Name, doublePlayer2Phone });
+    console.log('Received registration data:', { bidang, double1: double1?.player1Name, double1Phone: double1?.player1Phone });
     
-    if (!bidang || !doublePlayer1Name || !doublePlayer1Phone || !doublePlayer2Name || !doublePlayer2Phone) {
+    if (!bidang || !double1?.player1Name || !double1?.player1Phone || !double1?.player2Name || !double1?.player2Phone) {
       return NextResponse.json(
-        { success: false, error: 'Required fields missing: bidang, doublePlayer1Name, doublePlayer1Phone, doublePlayer2Name, doublePlayer2Phone' },
+        { success: false, error: 'Required fields missing: bidang and double1 (with both players)' },
         { status: 400 }
       );
     }
@@ -108,33 +105,35 @@ export async function POST(request: Request) {
     // Prepare registration records for each type
     const registrationsToProcess: RegistrationData[] = [];
 
-    // Double team (required)
+    // Double team 1 (required)
     registrationsToProcess.push({
       bidang,
       type: 'double',
-      player1_name: doublePlayer1Name,
-      player1_phone: doublePlayer1Phone,
-      player2_name: doublePlayer2Name,
-      player2_phone: doublePlayer2Phone,
+      player1_name: double1.player1Name,
+      player1_phone: double1.player1Phone,
+      player2_name: double1.player2Name,
+      player2_phone: double1.player2Phone,
     });
 
-    // Single woman (optional)
-    if (singleWomanName && singleWomanPhone) {
+    // Double team 2 (optional)
+    if (double2?.player1Name && double2?.player1Phone && double2?.player2Name && double2?.player2Phone) {
       registrationsToProcess.push({
         bidang,
-        type: 'single_women',
-        player1_name: singleWomanName,
-        player1_phone: singleWomanPhone,
+        type: 'double',
+        player1_name: double2.player1Name,
+        player1_phone: double2.player1Phone,
+        player2_name: double2.player2Name,
+        player2_phone: double2.player2Phone,
       });
     }
 
-    // Single man (optional)
-    if (singleManName && singleManPhone) {
+    // Single player (optional)
+    if (single?.name && single?.phone) {
       registrationsToProcess.push({
         bidang,
-        type: 'single_men',
-        player1_name: singleManName,
-        player1_phone: singleManPhone,
+        type: 'single',
+        player1_name: single.name,
+        player1_phone: single.phone,
       });
     }
 
