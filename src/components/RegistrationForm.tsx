@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Player {
@@ -197,6 +197,10 @@ export default function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [pendingSubmission, setPendingSubmission] = useState(false);
 
   // Debounce bidang input
   const debouncedBidang = useDebounce(formData.bidang, 500);
@@ -396,20 +400,10 @@ export default function RegistrationForm() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Clear previous messages
-    setMessage('');
-    setErrors({});
-
-    // Validate form
-    if (!validateForm()) {
-      setMessage('Silakan perbaiki kesalahan pada form');
-      return;
-    }
-
+  // Function to handle actual form submission
+  const submitRegistration = async () => {
     setIsSubmitting(true);
+    setShowTermsModal(false);
 
     try {
       // Combine current form data with existing data to ensure complete payload
@@ -473,6 +467,7 @@ export default function RegistrationForm() {
         });
         // Reset bidang status
         setExistingData(null);
+        setAgreedToTerms(false);
         setTimeout(() => {
           router.push('/success');
         }, 2000);
@@ -484,11 +479,300 @@ export default function RegistrationForm() {
       setMessage('Terjadi kesalahan koneksi. Silakan coba lagi.');
     } finally {
       setIsSubmitting(false);
+      setPendingSubmission(false);
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Clear previous messages
+    setMessage('');
+    setErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      setMessage('Silakan perbaiki kesalahan pada form');
+      return;
+    }
+
+    // Show terms modal instead of submitting directly
+    setPendingSubmission(true);
+    setHasScrolledToBottom(false);
+    setShowTermsModal(true);
+  };
+
+  // Terms & Conditions Modal Component
+  const TermsModal = () => {
+    const contentRef = useRef<HTMLDivElement>(null);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+      };
+    }, []);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLDivElement;
+      
+      // Clear previous timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Debounce the scroll check to prevent frequent updates
+      scrollTimeoutRef.current = setTimeout(() => {
+        const { scrollTop, scrollHeight, clientHeight } = target;
+        // Check if scrolled to bottom (with 10px tolerance)
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+        
+        // Only update state if it's actually changing to prevent unnecessary re-renders
+        if (isAtBottom !== hasScrolledToBottom) {
+          setHasScrolledToBottom(isAtBottom);
+        }
+      }, 100); // 100ms debounce
+    };
+
+    const handleApprove = () => {
+      setAgreedToTerms(true);
+      submitRegistration();
+    };
+
+    const handleCancel = () => {
+      // Clear timeout when closing
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      setShowTermsModal(false);
+      setPendingSubmission(false);
+      setHasScrolledToBottom(false);
+    };
+
+    return (
+      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${showTermsModal ? 'block' : 'hidden'}`}>
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={handleCancel}
+        ></div>
+        
+        {/* Modal Content */}
+        <div className="relative bg-card border border-accent/30 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary to-primary p-4 border-b border-accent/30 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-accent">📋 Syarat & Ketentuan</h3>
+              <button
+                onClick={handleCancel}
+                className="text-accent hover:text-accent/80 transition-colors text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm text-accent/80 mt-2">
+              Silakan baca seluruh syarat dan ketentuan hingga selesai untuk melanjutkan pendaftaran
+            </p>
+          </div>
+
+          {/* Content */}
+          <div 
+            ref={contentRef}
+            className="p-6 overflow-y-auto flex-1"
+            onScroll={handleScroll}
+            style={{ 
+              scrollBehavior: 'auto',
+              willChange: 'scroll-position',
+              transform: 'translateZ(0)' // Force hardware acceleration
+            }}
+          >
+          <div className="space-y-6 text-foreground">
+            <div>
+              <h4 className="font-bold text-accent mb-2">🏆 TI Billiard Cup 2025 - Syarat & Ketentuan</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                Dengan mendaftar dalam turnamen ini, Anda menyetujui syarat dan ketentuan berikut:
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📅 Jadwal & Lokasi</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Turnamen akan dilaksanakan pada tanggal 22 November 2025</li>
+                  <li>• Waktu pelaksanaan: 18.00 - 20.00 WIB</li>
+                  <li>• Lokasi: Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung</li>
+                  <li>• Peserta wajib hadir tepat waktu sesuai jadwal yang ditentukan</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">👥 Ketentuan Peserta</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Setiap bidang wajib mendaftarkan minimal kategori Ganda 1 (2 orang)</li>
+                  <li>• Maksimal 5 peserta per bidang: 2 ganda (4 orang) + 1 single (1 orang)</li>
+                  <li>• Peserta harus mahasiswa aktif atau alumni dari bidang yang didaftarkan</li>
+                  <li>• Nomor handphone yang didaftarkan harus aktif WhatsApp untuk komunikasi</li>
+                  <li>• Setiap peserta bertanggung jawab atas kehadiran sesuai jadwal</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🎱 Aturan Permainan</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Turnamen menggunakan aturan standar billiard 8-ball</li>
+                  <li>• Sistem pertandingan akan ditentukan berdasarkan jumlah peserta</li>
+                  <li>• Keputusan wasit/panitia bersifat final dan tidak dapat diganggu gugat</li>
+                  <li>• Peserta wajib menjaga sportivitas dan etika selama turnamen</li>
+                  <li>• Tidak diperbolehkan melakukan kecurangan dalam bentuk apapun</li>
+                  <li>• Peserta yang melanggar aturan permainan akan mendapat peringatan atau diskualifikasi</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🚫 Larangan & Tata Tertib</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• <strong>DILARANG KERAS</strong> membawa atau mengonsumsi minuman beralkohol/keras</li>
+                  <li>• Dilarang membawa makanan atau minuman ke area meja billiard</li>
+                  <li>• Tidak diperbolehkan menggunakan kata-kata kasar atau tidak sopan</li>
+                  <li>• Dilarang mengganggu konsentrasi pemain lain yang sedang bermain</li>
+                  <li>• Tidak diperbolehkan menggunakan handphone selama pertandingan berlangsung</li>
+                  <li>• Peserta harus berpakaian sopan dan rapi (tidak boleh kaos singlet/tanpa lengan)</li>
+                  <li>• Dilarang membawa senjata tajam atau benda berbahaya lainnya</li>
+                  <li>• Tidak diperbolehkan bertaruh atau berjudi dalam bentuk apapun</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">👕 Dress Code & Perilaku</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Wajib berpakaian sopan dan rapi (kemeja/polo shirt/kaos berlengan)</li>
+                  <li>• Tidak diperbolehkan memakai sandal jepit (gunakan sepatu tertutup)</li>
+                  <li>• Peserta harus bersikap sopan dan menghormati sesama peserta</li>
+                  <li>• Wajib menjaga kebersihan area turnamen</li>
+                  <li>• Tidak diperbolehkan merusak fasilitas venue</li>
+                  <li>• Peserta yang melanggar tata tertib akan mendapat teguran hingga diskualifikasi</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">💰 Biaya & Hadiah</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Biaya pendaftaran dan ketentuan hadiah akan diinformasikan melalui WhatsApp</li>
+                  <li>• Pembayaran dilakukan sesuai petunjuk yang diberikan panitia</li>
+                  <li>• Hadiah akan diberikan kepada juara sesuai kategori yang diikuti</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🏥 Protokol Kesehatan & Keselamatan</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Peserta dalam kondisi sehat dan tidak sedang sakit</li>
+                  <li>• Wajib menjaga kebersihan tangan sebelum menyentuh peralatan</li>
+                  <li>• Panitia tidak bertanggung jawab atas cedera yang terjadi akibat kelalaian peserta</li>
+                  <li>• Peserta dengan kondisi kesehatan tertentu wajib memberitahu panitia</li>
+                  <li>• Dilarang bermain dalam kondisi tidak sadar/mabuk</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">⚖️ Sanksi & Konsekuensi</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• <strong>Peringatan:</strong> Untuk pelanggaran ringan (teguran lisan)</li>
+                  <li>• <strong>Kartu Kuning:</strong> Untuk pelanggaran sedang (peringatan resmi)</li>
+                  <li>• <strong>Diskualifikasi:</strong> Untuk pelanggaran berat (keluar dari turnamen)</li>
+                  <li>• Peserta yang membawa minuman keras akan langsung didiskualifikasi</li>
+                  <li>• Perilaku tidak sportif dapat mengakibatkan diskualifikasi permanen</li>
+                  <li>• Kerusakan fasilitas akan dikenakan denda sesuai harga barang</li>
+                  <li>• Peserta yang didiskualifikasi tidak berhak atas pengembalian biaya pendaftaran</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">⚠️ Ketentuan Lainnya</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Panitia berhak mengubah jadwal atau aturan jika diperlukan</li>
+                  <li>• Peserta yang tidak hadir tanpa konfirmasi akan didiskualifikasi</li>
+                  <li>• Panitia tidak bertanggung jawab atas kehilangan barang pribadi</li>
+                  <li>• Data pribadi peserta akan dijaga kerahasiaannya sesuai kebijakan privasi</li>
+                  <li>• Keputusan panitia dalam segala hal bersifat final dan mengikat</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📞 Kontak</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Untuk pertanyaan lebih lanjut, hubungi:</li>
+                  <li>• Michael Sean (TI): 085189970998</li>
+                  <li>• Novi (TI): 085624055869</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
+              <p className="text-amber-800 text-sm font-medium">
+                ⚠️ Dengan menyetujui syarat dan ketentuan ini, Anda menyatakan telah membaca, memahami, 
+                dan bersedia mengikuti seluruh aturan yang berlaku dalam TI Billiard Cup 2025. 
+                Pelanggaran terhadap syarat dan ketentuan dapat mengakibatkan diskualifikasi.
+              </p>
+            </div>
+          </div>
+          </div>
+
+          {/* Footer - Always visible */}
+          <div className="p-4 border-t border-accent/30 bg-secondary/50 flex-shrink-0">
+            {/* Fixed height container to prevent layout shift */}
+            <div className="min-h-[20px] mb-3 text-center">
+              {!hasScrolledToBottom && (
+                <p className="text-sm text-amber-600 flex items-center justify-center gap-2">
+                  <span>⬇️</span>
+                  Silakan gulir ke bawah untuk membaca seluruh syarat dan ketentuan
+                  <span>⬇️</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 text-foreground hover:text-accent transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={!hasScrolledToBottom || isSubmitting}
+                className={`px-6 py-2 rounded-lg transition-all min-w-[160px] ${
+                  hasScrolledToBottom && !isSubmitting
+                    ? 'bg-gradient-to-r from-accent to-accent text-accent-foreground hover:shadow-lg'
+                    : 'bg-input text-muted-foreground cursor-not-allowed'
+                }`}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-border border-t-transparent rounded-full animate-spin"></div>
+                    <span>Memproses...</span>
+                  </div>
+                ) : hasScrolledToBottom ? (
+                  'Saya Setuju & Daftar'
+                ) : (
+                  'Baca Hingga Selesai'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-card to-secondary rounded-2xl shadow-2xl overflow-hidden border border-accent/50">
+    <>
+      {/* Terms & Conditions Modal */}
+      <TermsModal />
+      
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-card to-secondary rounded-2xl shadow-2xl overflow-hidden border border-accent/50">
       {/* Form Header */}
       <div className="bg-gradient-to-br from-primary via-primary to-primary p-6 text-center relative overflow-hidden">
         {/* Spotlight effect */}
@@ -731,6 +1015,7 @@ export default function RegistrationForm() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
