@@ -199,7 +199,6 @@ export default function RegistrationForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [pendingSubmission, setPendingSubmission] = useState(false);
 
   // Debounce bidang input
@@ -498,7 +497,6 @@ export default function RegistrationForm() {
 
     // Show terms modal instead of submitting directly
     setPendingSubmission(true);
-    setHasScrolledToBottom(false);
     setShowTermsModal(true);
   };
 
@@ -506,6 +504,7 @@ export default function RegistrationForm() {
   const TermsModal = () => {
     const contentRef = useRef<HTMLDivElement>(null);
     const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [modalScrolledToBottom, setModalScrolledToBottom] = useState(false);
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -516,25 +515,34 @@ export default function RegistrationForm() {
       };
     }, []);
 
+    // Reset scroll state when modal opens
+    useEffect(() => {
+      if (showTermsModal) {
+        setModalScrolledToBottom(false);
+      }
+    }, []); // Remove showTermsModal dependency
+
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const target = e.target as HTMLDivElement;
+      const { scrollTop, scrollHeight, clientHeight } = target;
       
-      // Clear previous timeout
+      // Check if scrolled to bottom (with 30px tolerance for better UX)
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 30;
+      
+      // Clear previous timeout to prevent multiple updates
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
       
-      // Debounce the scroll check to prevent frequent updates
-      scrollTimeoutRef.current = setTimeout(() => {
-        const { scrollTop, scrollHeight, clientHeight } = target;
-        // Check if scrolled to bottom (with 10px tolerance)
-        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
-        
-        // Only update state if it's actually changing to prevent unnecessary re-renders
-        if (isAtBottom !== hasScrolledToBottom) {
-          setHasScrolledToBottom(isAtBottom);
-        }
-      }, 100); // 100ms debounce
+      // Immediate update for scroll to bottom, debounced for scroll away
+      if (isAtBottom && !modalScrolledToBottom) {
+        setModalScrolledToBottom(true);
+      } else if (!isAtBottom && modalScrolledToBottom) {
+        // Small delay when scrolling away from bottom
+        scrollTimeoutRef.current = setTimeout(() => {
+          setModalScrolledToBottom(false);
+        }, 100);
+      }
     };
 
     const handleApprove = () => {
@@ -549,7 +557,7 @@ export default function RegistrationForm() {
       }
       setShowTermsModal(false);
       setPendingSubmission(false);
-      setHasScrolledToBottom(false);
+      setModalScrolledToBottom(false);
     };
 
     return (
@@ -585,119 +593,70 @@ export default function RegistrationForm() {
             onScroll={handleScroll}
             style={{ 
               scrollBehavior: 'auto',
-              willChange: 'scroll-position',
-              transform: 'translateZ(0)' // Force hardware acceleration
+              overscrollBehavior: 'contain',
+              position: 'relative'
             }}
           >
           <div className="space-y-6 text-foreground">
             <div>
               <h4 className="font-bold text-accent mb-2">🏆 TI Billiard Cup 2025 - Syarat & Ketentuan</h4>
               <p className="text-sm text-muted-foreground mb-4">
-                Dengan mendaftar dalam turnamen ini, Anda menyetujui syarat dan ketentuan berikut:
+                Dalam rangka menjaga sportifitas, kenyamanan, dan ketertiban selama kegiatan TI Billiard Cup 2025, peserta diwajibkan mematuhi seluruh peraturan berikut:
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <h5 className="font-semibold text-accent mb-2">📅 Jadwal & Lokasi</h5>
+                <h5 className="font-semibold text-accent mb-2">🧾 A. Ketentuan Umum</h5>
                 <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Turnamen akan dilaksanakan pada tanggal 22 November 2025</li>
-                  <li>• Waktu pelaksanaan: 18.00 - 20.00 WIB</li>
+                  <li>• Peserta wajib merupakan staf aktif Ganesha Operation Pusat.</li>
+                  <li>• Setiap bidang maksimal mendaftarkan 2 tim Ganda (boleh mix pria/wanita) dan 1 peserta untuk kategori Single (pria).</li>
+                  <li>• Peserta wajib hadir tepat waktu sesuai jadwal pertandingan yang telah ditentukan.</li>
+                  <li>• Peserta yang tidak hadir 10 menit setelah jadwal pertandingan dimulai akan dianggap gugur (walk out).</li>
+                  <li>• Dilarang melakukan protes tidak sopan kepada panitia, wasit, atau peserta lain.</li>
+                  <li>• Semua keputusan panitia dan wasit bersifat final dan tidak dapat diganggu gugat.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🚫 B. Larangan Selama Kegiatan</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Dilarang membawa atau mengonsumsi minuman keras, obat-obatan terlarang, atau zat adiktif lainnya di area acara.</li>
+                  <li>• Dilarang merokok di area dalam ruangan (indoor) kecuali di tempat yang telah disediakan.</li>
+                  <li>• Dilarang membawa senjata tajam, senjata api, atau barang berbahaya lainnya.</li>
+                  <li>• Dilarang menggunakan kata-kata kasar, menghina, atau melakukan tindakan tidak sportif kepada peserta lain.</li>
+                  <li>• Dilarang melakukan taruhan (judi) dalam bentuk apa pun selama kegiatan berlangsung.</li>
+                  <li>• Dilarang merusak fasilitas tempat pertandingan — peserta yang melanggar wajib mengganti kerusakan yang terjadi.</li>
+                  <li>• Dilarang membawa makanan atau minuman dari luar tanpa izin panitia.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🏆 C. Etika dan Sportivitas</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Junjung tinggi sportivitas, kebersamaan, dan solidaritas antar bidang.</li>
+                  <li>• Setiap pertandingan akan dipimpin oleh wasit resmi yang ditunjuk oleh panitia.</li>
+                  <li>• Peserta wajib menggunakan pakaian rapi dan sopan selama kegiatan berlangsung.</li>
+                  <li>• Tim wajib menjaga kebersihan area pertandingan sebelum dan sesudah bermain.</li>
+                  <li>• Segala bentuk perselisihan atau insiden selama kegiatan harus segera dilaporkan kepada panitia untuk diselesaikan secara baik-baik.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📱 D. Lain-lain</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Dokumentasi kegiatan dapat digunakan oleh panitia untuk keperluan publikasi internal.</li>
+                  <li>• Panitia tidak bertanggung jawab atas kehilangan barang pribadi selama acara.</li>
+                  <li>• Dengan mengikuti turnamen ini, peserta dianggap telah membaca, memahami, dan menyetujui seluruh peraturan yang berlaku.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📅 Informasi Turnamen</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Tanggal: 22 November 2025</li>
+                  <li>• Waktu: 18.00 - 20.00 WIB</li>
                   <li>• Lokasi: Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung</li>
-                  <li>• Peserta wajib hadir tepat waktu sesuai jadwal yang ditentukan</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">👥 Ketentuan Peserta</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Setiap bidang wajib mendaftarkan minimal kategori Ganda 1 (2 orang)</li>
-                  <li>• Maksimal 5 peserta per bidang: 2 ganda (4 orang) + 1 single (1 orang)</li>
-                  <li>• Peserta harus mahasiswa aktif atau alumni dari bidang yang didaftarkan</li>
-                  <li>• Nomor handphone yang didaftarkan harus aktif WhatsApp untuk komunikasi</li>
-                  <li>• Setiap peserta bertanggung jawab atas kehadiran sesuai jadwal</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">🎱 Aturan Permainan</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Turnamen menggunakan aturan standar billiard 8-ball</li>
-                  <li>• Sistem pertandingan akan ditentukan berdasarkan jumlah peserta</li>
-                  <li>• Keputusan wasit/panitia bersifat final dan tidak dapat diganggu gugat</li>
-                  <li>• Peserta wajib menjaga sportivitas dan etika selama turnamen</li>
-                  <li>• Tidak diperbolehkan melakukan kecurangan dalam bentuk apapun</li>
-                  <li>• Peserta yang melanggar aturan permainan akan mendapat peringatan atau diskualifikasi</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">🚫 Larangan & Tata Tertib</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• <strong>DILARANG KERAS</strong> membawa atau mengonsumsi minuman beralkohol/keras</li>
-                  <li>• Dilarang membawa makanan atau minuman ke area meja billiard</li>
-                  <li>• Tidak diperbolehkan menggunakan kata-kata kasar atau tidak sopan</li>
-                  <li>• Dilarang mengganggu konsentrasi pemain lain yang sedang bermain</li>
-                  <li>• Tidak diperbolehkan menggunakan handphone selama pertandingan berlangsung</li>
-                  <li>• Peserta harus berpakaian sopan dan rapi (tidak boleh kaos singlet/tanpa lengan)</li>
-                  <li>• Dilarang membawa senjata tajam atau benda berbahaya lainnya</li>
-                  <li>• Tidak diperbolehkan bertaruh atau berjudi dalam bentuk apapun</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">👕 Dress Code & Perilaku</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Wajib berpakaian sopan dan rapi (kemeja/polo shirt/kaos berlengan)</li>
-                  <li>• Tidak diperbolehkan memakai sandal jepit (gunakan sepatu tertutup)</li>
-                  <li>• Peserta harus bersikap sopan dan menghormati sesama peserta</li>
-                  <li>• Wajib menjaga kebersihan area turnamen</li>
-                  <li>• Tidak diperbolehkan merusak fasilitas venue</li>
-                  <li>• Peserta yang melanggar tata tertib akan mendapat teguran hingga diskualifikasi</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">💰 Biaya & Hadiah</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Biaya pendaftaran dan ketentuan hadiah akan diinformasikan melalui WhatsApp</li>
-                  <li>• Pembayaran dilakukan sesuai petunjuk yang diberikan panitia</li>
-                  <li>• Hadiah akan diberikan kepada juara sesuai kategori yang diikuti</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">🏥 Protokol Kesehatan & Keselamatan</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Peserta dalam kondisi sehat dan tidak sedang sakit</li>
-                  <li>• Wajib menjaga kebersihan tangan sebelum menyentuh peralatan</li>
-                  <li>• Panitia tidak bertanggung jawab atas cedera yang terjadi akibat kelalaian peserta</li>
-                  <li>• Peserta dengan kondisi kesehatan tertentu wajib memberitahu panitia</li>
-                  <li>• Dilarang bermain dalam kondisi tidak sadar/mabuk</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">⚖️ Sanksi & Konsekuensi</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• <strong>Peringatan:</strong> Untuk pelanggaran ringan (teguran lisan)</li>
-                  <li>• <strong>Kartu Kuning:</strong> Untuk pelanggaran sedang (peringatan resmi)</li>
-                  <li>• <strong>Diskualifikasi:</strong> Untuk pelanggaran berat (keluar dari turnamen)</li>
-                  <li>• Peserta yang membawa minuman keras akan langsung didiskualifikasi</li>
-                  <li>• Perilaku tidak sportif dapat mengakibatkan diskualifikasi permanen</li>
-                  <li>• Kerusakan fasilitas akan dikenakan denda sesuai harga barang</li>
-                  <li>• Peserta yang didiskualifikasi tidak berhak atas pengembalian biaya pendaftaran</li>
-                </ul>
-              </div>
-
-              <div>
-                <h5 className="font-semibold text-accent mb-2">⚠️ Ketentuan Lainnya</h5>
-                <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Panitia berhak mengubah jadwal atau aturan jika diperlukan</li>
-                  <li>• Peserta yang tidak hadir tanpa konfirmasi akan didiskualifikasi</li>
-                  <li>• Panitia tidak bertanggung jawab atas kehilangan barang pribadi</li>
-                  <li>• Data pribadi peserta akan dijaga kerahasiaannya sesuai kebijakan privasi</li>
-                  <li>• Keputusan panitia dalam segala hal bersifat final dan mengikat</li>
                 </ul>
               </div>
 
@@ -725,7 +684,7 @@ export default function RegistrationForm() {
           <div className="p-4 border-t border-accent/30 bg-secondary/50 flex-shrink-0">
             {/* Fixed height container to prevent layout shift */}
             <div className="min-h-[20px] mb-3 text-center">
-              {!hasScrolledToBottom && (
+              {!modalScrolledToBottom && (
                 <p className="text-sm text-amber-600 flex items-center justify-center gap-2">
                   <span>⬇️</span>
                   Silakan gulir ke bawah untuk membaca seluruh syarat dan ketentuan
@@ -742,9 +701,9 @@ export default function RegistrationForm() {
               </button>
               <button
                 onClick={handleApprove}
-                disabled={!hasScrolledToBottom || isSubmitting}
+                disabled={!modalScrolledToBottom || isSubmitting}
                 className={`px-6 py-2 rounded-lg transition-all min-w-[160px] ${
-                  hasScrolledToBottom && !isSubmitting
+                  modalScrolledToBottom && !isSubmitting
                     ? 'bg-gradient-to-r from-accent to-accent text-accent-foreground hover:shadow-lg'
                     : 'bg-input text-muted-foreground cursor-not-allowed'
                 }`}
@@ -754,8 +713,8 @@ export default function RegistrationForm() {
                     <div className="w-4 h-4 border-2 border-border border-t-transparent rounded-full animate-spin"></div>
                     <span>Memproses...</span>
                   </div>
-                ) : hasScrolledToBottom ? (
-                  'Saya Setuju & Daftar'
+                ) : modalScrolledToBottom ? (
+                  'Setuju & Daftar'
                 ) : (
                   'Baca Hingga Selesai'
                 )}
