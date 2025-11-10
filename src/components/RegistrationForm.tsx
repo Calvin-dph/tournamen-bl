@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Player {
@@ -197,6 +197,9 @@ export default function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [pendingSubmission, setPendingSubmission] = useState(false);
 
   // Debounce bidang input
   const debouncedBidang = useDebounce(formData.bidang, 500);
@@ -396,20 +399,10 @@ export default function RegistrationForm() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Clear previous messages
-    setMessage('');
-    setErrors({});
-
-    // Validate form
-    if (!validateForm()) {
-      setMessage('Silakan perbaiki kesalahan pada form');
-      return;
-    }
-
+  // Function to handle actual form submission
+  const submitRegistration = async () => {
     setIsSubmitting(true);
+    setShowTermsModal(false);
 
     try {
       // Combine current form data with existing data to ensure complete payload
@@ -473,6 +466,7 @@ export default function RegistrationForm() {
         });
         // Reset bidang status
         setExistingData(null);
+        setAgreedToTerms(false);
         setTimeout(() => {
           router.push('/success');
         }, 2000);
@@ -484,11 +478,260 @@ export default function RegistrationForm() {
       setMessage('Terjadi kesalahan koneksi. Silakan coba lagi.');
     } finally {
       setIsSubmitting(false);
+      setPendingSubmission(false);
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Clear previous messages
+    setMessage('');
+    setErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      setMessage('Silakan perbaiki kesalahan pada form');
+      return;
+    }
+
+    // Show terms modal instead of submitting directly
+    setPendingSubmission(true);
+    setShowTermsModal(true);
+  };
+
+  // Terms & Conditions Modal Component
+  const TermsModal = () => {
+    const contentRef = useRef<HTMLDivElement>(null);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [modalScrolledToBottom, setModalScrolledToBottom] = useState(false);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+      };
+    }, []);
+
+    // Reset scroll state when modal opens
+    useEffect(() => {
+      if (showTermsModal) {
+        setModalScrolledToBottom(false);
+      }
+    }, []); // Remove showTermsModal dependency
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLDivElement;
+      const { scrollTop, scrollHeight, clientHeight } = target;
+      
+      // Check if scrolled to bottom (with 30px tolerance for better UX)
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 30;
+      
+      // Clear previous timeout to prevent multiple updates
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Immediate update for scroll to bottom, debounced for scroll away
+      if (isAtBottom && !modalScrolledToBottom) {
+        setModalScrolledToBottom(true);
+      } else if (!isAtBottom && modalScrolledToBottom) {
+        // Small delay when scrolling away from bottom
+        scrollTimeoutRef.current = setTimeout(() => {
+          setModalScrolledToBottom(false);
+        }, 100);
+      }
+    };
+
+    const handleApprove = () => {
+      setAgreedToTerms(true);
+      submitRegistration();
+    };
+
+    const handleCancel = () => {
+      // Clear timeout when closing
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      setShowTermsModal(false);
+      setPendingSubmission(false);
+      setModalScrolledToBottom(false);
+    };
+
+    return (
+      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${showTermsModal ? 'block' : 'hidden'}`}>
+        {/* Backdrop */}
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={handleCancel}
+        ></div>
+        
+        {/* Modal Content */}
+        <div className="relative bg-card border border-accent/30 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary to-primary p-4 border-b border-accent/30 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-accent">📋 Syarat & Ketentuan</h3>
+              <button
+                onClick={handleCancel}
+                className="text-accent hover:text-accent/80 transition-colors text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm text-accent/80 mt-2">
+              Silakan baca seluruh syarat dan ketentuan hingga selesai untuk melanjutkan pendaftaran
+            </p>
+          </div>
+
+          {/* Content */}
+          <div 
+            ref={contentRef}
+            className="p-6 overflow-y-auto flex-1"
+            onScroll={handleScroll}
+            style={{ 
+              scrollBehavior: 'auto',
+              overscrollBehavior: 'contain',
+              position: 'relative'
+            }}
+          >
+          <div className="space-y-6 text-foreground">
+            <div>
+              <h4 className="font-bold text-accent mb-2">🏆 TI Billiard Cup 2025 - Syarat & Ketentuan</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                Dalam rangka menjaga sportifitas, kenyamanan, dan ketertiban selama kegiatan TI Billiard Cup 2025, peserta diwajibkan mematuhi seluruh peraturan berikut:
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🧾 A. Ketentuan Umum</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Peserta wajib merupakan staf aktif Ganesha Operation Pusat.</li>
+                  <li>• Setiap bidang maksimal mendaftarkan 2 tim Ganda (boleh mix pria/wanita) dan 1 peserta untuk kategori Single (pria).</li>
+                  <li>• Peserta wajib hadir tepat waktu sesuai jadwal pertandingan yang telah ditentukan.</li>
+                  <li>• Peserta yang tidak hadir 10 menit setelah jadwal pertandingan dimulai akan dianggap gugur (walk out).</li>
+                  <li>• Dilarang melakukan protes tidak sopan kepada panitia, wasit, atau peserta lain.</li>
+                  <li>• Semua keputusan panitia dan wasit bersifat final dan tidak dapat diganggu gugat.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🚫 B. Larangan Selama Kegiatan</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Dilarang membawa atau mengonsumsi minuman keras, obat-obatan terlarang, atau zat adiktif lainnya di area acara.</li>
+                  <li>• Dilarang merokok di area dalam ruangan (indoor) kecuali di tempat yang telah disediakan.</li>
+                  <li>• Dilarang membawa senjata tajam, senjata api, atau barang berbahaya lainnya.</li>
+                  <li>• Dilarang menggunakan kata-kata kasar, menghina, atau melakukan tindakan tidak sportif kepada peserta lain.</li>
+                  <li>• Dilarang melakukan taruhan (judi) dalam bentuk apa pun selama kegiatan berlangsung.</li>
+                  <li>• Dilarang merusak fasilitas tempat pertandingan — peserta yang melanggar wajib mengganti kerusakan yang terjadi.</li>
+                  <li>• Dilarang membawa makanan atau minuman dari luar tanpa izin panitia.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">🏆 C. Etika dan Sportivitas</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Junjung tinggi sportivitas, kebersamaan, dan solidaritas antar bidang.</li>
+                  <li>• Setiap pertandingan akan dipimpin oleh wasit resmi yang ditunjuk oleh panitia.</li>
+                  <li>• Peserta wajib menggunakan pakaian rapi dan sopan selama kegiatan berlangsung.</li>
+                  <li>• Tim wajib menjaga kebersihan area pertandingan sebelum dan sesudah bermain.</li>
+                  <li>• Segala bentuk perselisihan atau insiden selama kegiatan harus segera dilaporkan kepada panitia untuk diselesaikan secara baik-baik.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📱 D. Lain-lain</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Dokumentasi kegiatan dapat digunakan oleh panitia untuk keperluan publikasi internal.</li>
+                  <li>• Panitia tidak bertanggung jawab atas kehilangan barang pribadi selama acara.</li>
+                  <li>• Dengan mengikuti turnamen ini, peserta dianggap telah membaca, memahami, dan menyetujui seluruh peraturan yang berlaku.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📅 Informasi Turnamen</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Tanggal: 22 November 2025</li>
+                  <li>• Waktu: 18.00 - 20.00 WIB</li>
+                  <li>• Lokasi: Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung</li>
+                </ul>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-accent mb-2">📞 Kontak</h5>
+                <ul className="text-sm space-y-1 text-foreground ml-4">
+                  <li>• Untuk pertanyaan lebih lanjut, hubungi:</li>
+                  <li>• Michael Sean (TI): 085189970998</li>
+                  <li>• Novi (TI): 085624055869</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded">
+              <p className="text-amber-800 text-sm font-medium">
+                ⚠️ Dengan menyetujui syarat dan ketentuan ini, Anda menyatakan telah membaca, memahami, 
+                dan bersedia mengikuti seluruh aturan yang berlaku dalam TI Billiard Cup 2025. 
+                Pelanggaran terhadap syarat dan ketentuan dapat mengakibatkan diskualifikasi.
+              </p>
+            </div>
+          </div>
+          </div>
+
+          {/* Footer - Always visible */}
+          <div className="p-4 border-t border-accent/30 bg-secondary/50 flex-shrink-0">
+            {/* Fixed height container to prevent layout shift */}
+            <div className="min-h-[20px] mb-3 text-center">
+              {!modalScrolledToBottom && (
+                <p className="text-sm text-amber-600 flex items-center justify-center gap-2">
+                  <span>⬇️</span>
+                  Silakan gulir ke bawah untuk membaca seluruh syarat dan ketentuan
+                  <span>⬇️</span>
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 text-foreground hover:text-accent transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={!modalScrolledToBottom || isSubmitting}
+                className={`px-6 py-2 rounded-lg transition-all min-w-[160px] ${
+                  modalScrolledToBottom && !isSubmitting
+                    ? 'bg-gradient-to-r from-accent to-accent text-accent-foreground hover:shadow-lg'
+                    : 'bg-input text-muted-foreground cursor-not-allowed'
+                }`}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-border border-t-transparent rounded-full animate-spin"></div>
+                    <span>Memproses...</span>
+                  </div>
+                ) : modalScrolledToBottom ? (
+                  'Setuju & Daftar'
+                ) : (
+                  'Baca Hingga Selesai'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-card to-secondary rounded-2xl shadow-2xl overflow-hidden border border-accent/50">
+    <>
+      {/* Terms & Conditions Modal */}
+      <TermsModal />
+      
+      <div className="w-full max-w-md md:max-w-2xl mx-auto bg-gradient-to-b from-card to-secondary rounded-2xl shadow-2xl overflow-hidden border border-accent/50">
       {/* Form Header */}
       <div className="bg-gradient-to-br from-primary via-primary to-primary p-6 text-center relative overflow-hidden">
         {/* Spotlight effect */}
@@ -731,6 +974,7 @@ export default function RegistrationForm() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
