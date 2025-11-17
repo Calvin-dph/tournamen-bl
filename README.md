@@ -23,7 +23,7 @@ A modern, responsive landing page for the TI Billiard Cup 2025 tournament regist
 - Maximum 2 teams per department (4 employees total)
 - Team names should contain 2 names separated by "&"
 - Phone numbers should include all participants' WhatsApp numbers
-- Registration closes on October 7, 2025
+- Registration closes on November 21, 2025
 
 ## Technology Stack
 
@@ -82,11 +82,11 @@ View registration summary (for admin purposes).
 
 - **Event**: TI Billiard Cup 2025
 - **Game**: 8-Ball Billiard
-- **Date**: October 13-18, 2025
-- **Time**: 17:15 - 20:00 WIB
+- **Date**: November 22, 2025
+- **Time**: 18:00 - 20:00 WIB
 - **Location**: Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung
 - **Format**: Group System, Semi-Competition
-- **Registration Deadline**: October 7, 2025
+- **Registration Deadline**: November 21, 2025
 
 ## Prizes
 

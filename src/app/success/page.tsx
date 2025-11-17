@@ -43,7 +43,8 @@ export default function SuccessPage() {
           <div className="bg-secondary rounded-xl p-6 mb-6 border border-border backdrop-blur-sm">
             <h3 className="font-bold text-accent mb-3">📅 Reminder Tournament</h3>
             <div className="text-sm text-foreground space-y-3">
-              <p><strong>Tanggal:</strong> 22 November 2025 - Selesai</p>
+              <p><strong>Batas Pendaftaran:</strong> 21 November 2025</p>
+              <p><strong>Tanggal Turnamen:</strong> 22 November 2025</p>
               <p><strong>Waktu:</strong> 18.00 - 20.00 WIB</p>
               <p><strong>Lokasi:</strong> Greenlight Cafe & Billiard</p>
               <p><strong>Alamat:</strong> Jl. Purnawarman No.3, Bandung</p>

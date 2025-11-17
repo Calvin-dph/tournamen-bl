@@ -9,9 +9,9 @@ export default function RegisterPage() {
   const [isRegistrationClosed, setIsRegistrationClosed] = useState(false);
 
   useEffect(() => {
-    // Check if current date is after November 15, 2025
+    // Check if current date is after November 21, 2025
     const currentDate = new Date();
-    const closingDate = new Date('2025-11-15T23:59:59');
+    const closingDate = new Date('2025-11-21T23:59:59');
     setIsRegistrationClosed(currentDate > closingDate);
   }, []);
 
@@ -48,7 +48,7 @@ export default function RegisterPage() {
                   ❌
                 </div>
                 <h2 className="text-2xl font-bold mb-2">PENDAFTARAN DITUTUP</h2>
-                <p className="text-sm opacity-90 text-red-200">Registrasi berakhir 15 November 2025</p>
+                <p className="text-sm opacity-90 text-red-200">Registrasi berakhir 21 November 2025</p>
               </div>
             </div>
 
@@ -56,15 +56,16 @@ export default function RegisterPage() {
             <div className="p-8 text-center">
               <div className="mb-6">
                 <h3 className="text-xl font-bold text-foreground mb-4">📅 Maaf, Waktu Pendaftaran Telah Berakhir</h3>
-                <p className="text-muted-foreground mb-6">
-                  Pendaftaran untuk TI Billiard Cup 2025 telah ditutup pada tanggal 15 November 2025.
+                <p className="text-lg text-muted-foreground mb-8">
+                  Pendaftaran untuk TI Billiard Cup 2025 telah ditutup pada tanggal 21 November 2025.
                 </p>
 
                 <div className="bg-secondary border-l-4 border-green-500 p-4 mb-6 backdrop-blur-sm text-left">
                   <h4 className="font-semibold text-green-500 mb-2">📋 Informasi Turnamen:</h4>
                   <ul className="text-sm text-muted-foreground space-y-2">
-                    <li>• Tanggal: 22 November 2025 - Selesai</li>
-                    <li>• Waktu: 17.15 - 20.00 WIB</li>
+                    <li>• Batas Pendaftaran: 21 November 2025</li>
+                    <li>• Tanggal Turnamen: 22 November 2025</li>
+                    <li>• Waktu: 18.00 - 20.00 WIB</li>
                     <li>• Lokasi: Greenlight Cafe & Billiard</li>
                     <li>• Alamat: Jl. Purnawarman No.3, Bandung</li>
                     <li>• Peserta yang sudah terdaftar akan dihubungi panitia</li>

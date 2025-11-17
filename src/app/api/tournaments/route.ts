@@ -14,11 +14,11 @@ export async function GET() {
           max_teams: 16,
           status: 'group_stage',
           description: 'Tournament billiard tahunan TI dengan sistem grup dan knockout',
-          start_date: '2025-10-13T18:00:00+07:00',
-          end_date: '2025-10-18T20:00:00+07:00',
+          start_date: '2025-11-22T18:00:00+07:00',
+          end_date: '2025-11-22T20:00:00+07:00',
           location: 'Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung',
           participant_count: 8,
-          created_at: '2025-10-01T00:00:00Z'
+          created_at: '2025-11-01T00:00:00Z'
         }
       ];
 
@@ -64,11 +64,11 @@ export async function GET() {
         max_teams: 16,
         status: 'group_stage',
         description: 'Tournament billiard tahunan TI dengan sistem grup dan knockout',
-        start_date: '2025-10-13T18:00:00+07:00',
-        end_date: '2025-10-18T20:00:00+07:00',
+        start_date: '2025-11-22T18:00:00+07:00',
+        end_date: '2025-11-22T20:00:00+07:00',
         location: 'Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung',
         participant_count: 8,
-        created_at: '2025-10-01T00:00:00Z'
+        created_at: '2025-11-01T00:00:00Z'
       }
     ];
 

@@ -654,7 +654,8 @@ export default function RegistrationForm() {
               <div>
                 <h5 className="font-semibold text-accent mb-2">📅 Informasi Turnamen</h5>
                 <ul className="text-sm space-y-1 text-foreground ml-4">
-                  <li>• Tanggal: 22 November 2025</li>
+                  <li>• Batas Pendaftaran: 21 November 2025</li>
+                  <li>• Tanggal Turnamen: 22 November 2025</li>
                   <li>• Waktu: 18.00 - 20.00 WIB</li>
                   <li>• Lokasi: Greenlight Cafe & Billiard, Jl. Purnawarman No.3, Bandung</li>
                 </ul>
@@ -767,7 +768,8 @@ export default function RegistrationForm() {
         <div className="bg-secondary border-l-4 border-accent p-4 mb-6 backdrop-blur-sm">
           <h3 className="font-semibold text-accent mb-2">📅 Informasi Turnamen:</h3>
           <div className="text-sm text-foreground space-y-2 mb-4">
-            <p><strong>Tanggal:</strong> 22 November 2025 - Selesai</p>
+            <p><strong>Batas Pendaftaran:</strong> 21 November 2025</p>
+            <p><strong>Tanggal Turnamen:</strong> 22 November 2025</p>
             <p><strong>Waktu:</strong> 18.00 - 20.00 WIB</p>
             <p><strong>Lokasi:</strong> Greenlight Cafe & Billiard</p>
             <p><strong>Alamat:</strong> Jl. Purnawarman No.3, Bandung</p>

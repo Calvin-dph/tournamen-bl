@@ -37,9 +37,9 @@ export default function Home() {
   const [totalPlayers, setTotalPlayers] = useState(0);
 
   useEffect(() => {
-    // Check if current date is after November 15, 2025
+    // Check if current date is after November 21, 2025
     const currentDate = new Date();
-    const closingDate = new Date('2025-11-15T23:59:59');
+    const closingDate = new Date('2025-11-21T23:59:59');
     setIsRegistrationClosed(currentDate > closingDate);
 
     // Load dashboard data
@@ -155,7 +155,11 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-4 pt-8 text-sm">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-accent" />
-                <span>22 November 2025 - Selesai</span>
+                <span>Daftar hingga: 21 November 2025</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-accent" />
+                <span>Turnamen: 22 November 2025</span>
               </div>
               <div className="flex items-center gap-2">
                 <Timer className="w-4 h-4 text-accent" />
@@ -396,7 +400,7 @@ export default function Home() {
                         <div className="font-medium">Greenlight Cafe & Billiard</div>
                         <div className="text-sm text-muted-foreground">Jl. Purnawarman No.3, Bandung</div>
                         <div className="text-sm text-muted-foreground mt-2">
-                          18:00 - 20:00 WIB | 22 November 2025 - Selesai
+                          18:00 - 20:00 WIB | Daftar hingga: 21 Nov | Turnamen: 22 Nov 2025
                         </div>
                       </div>
                     </div>
@@ -435,7 +439,8 @@ export default function Home() {
             <div>
               <h4 className="font-bold text-lg mb-4">Info Turnamen</h4>
               <ul className="space-y-2 text-primary-foreground/70">
-                <li>22 November 2025 - Selesai</li>
+                <li>Daftar hingga: 21 November 2025</li>
+                <li>Turnamen: 22 November 2025</li>
                 <li>Greenlight Cafe & Billiard</li>
                 <li>18:00 - 20:00 WIB</li>
               </ul>
