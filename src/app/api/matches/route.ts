@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       query = query
         .order('scheduled_at', { ascending: true })
         .order('table_number', { ascending: true })
-        .limit(1);
+        .limit(3);
     }
 
     const { data: matches, error } = await query;

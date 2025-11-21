@@ -1,227 +1,389 @@
 'use client'
 
 import React from 'react'
-import { Trophy, Award } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { Trophy } from 'lucide-react'
 
-interface BracketTeam {
+interface Team {
   id: string
   name: string
+  tournament_id: string
 }
 
-interface BracketMatch {
+interface Match {
   id: string
-  roundNumber: number
-  matchNumber: number
+  tournament_id: string
+  match_type: 'group' | 'knockout'
+  round_name?: string
+  round_number?: number
+  match_number?: number
   status: 'pending' | 'in_progress' | 'completed'
-  team1?: BracketTeam
-  team2?: BracketTeam
-  team1Score?: number | null
-  team2Score?: number | null
-  winnerId?: string | null
+  scheduled_at?: string
+  team1_id?: string
+  team2_id?: string
+  team1_score?: number
+  team2_score?: number
+  team1_balls?: number
+  team2_balls?: number
+  table_number?: number
+  winner_id?: string
+  next_match_id?: string | null
 }
 
 interface TournamentBracketProps {
-  matches: BracketMatch[]
-  title?: string
+  format: string
+  matches: Match[]
+  teams: Team[]
 }
 
-export function TournamentBracket({ matches, title = "Bagan Turnamen" }: TournamentBracketProps) {
-  if (matches.length === 0) {
+interface RoundColumn {
+  round: number
+  matches: Match[]
+}
+
+export function TournamentBracket({ format, matches, teams }: TournamentBracketProps) {
+  // Filter only knockout matches
+  const knockoutMatches = matches.filter(match => match.match_type === 'knockout')
+
+  if (knockoutMatches.length === 0) {
+    return null
+  }
+
+  const isDoubleElimination = String(format || '').toLowerCase() === 'double_elimination'
+
+  const upperBracketMatches = isDoubleElimination
+    ? knockoutMatches.filter(match => match.round_name === 'upper')
+    : []
+
+  const lowerBracketMatches = isDoubleElimination
+    ? knockoutMatches.filter(match => match.round_name === 'lower')
+    : []
+
+  const grandFinalMatches = isDoubleElimination
+    ? knockoutMatches.filter(match => {
+      const rn = String(match.round_name || '').toLowerCase()
+      return rn === 'grand-final' || rn === 'grand_final' || rn === 'grandfinal'
+    })
+    : []
+
+  const otherMatches = isDoubleElimination ? [] : knockoutMatches
+
+  // Separate matches by bracket type
+
+  // Build rounds structure based on next_match_id
+  const buildRounds = (bracketMatches: Match[]): RoundColumn[] => {
+    if (bracketMatches.length === 0) return []
+
+    // Group by round number
+    const roundsMap = new Map<number, Match[]>()
+    bracketMatches.forEach(match => {
+      const round = match.round_number || 0
+      if (!roundsMap.has(round)) {
+        roundsMap.set(round, [])
+      }
+      roundsMap.get(round)!.push(match)
+    })
+
+    // Sort matches within each round by match_number
+    const rounds: RoundColumn[] = Array.from(roundsMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([round, matches]) => ({
+        round,
+        matches: matches.sort((a, b) => (a.match_number || 0) - (b.match_number || 0))
+      }))
+
+    return rounds
+  }
+
+  const renderBracket = (bracketMatches: Match[], title: string, bracketType: 'upper' | 'lower' | 'grand-final' | 'other') => {
+    if (bracketMatches.length === 0) return null
+
+    const rounds = buildRounds(bracketMatches)
+
+    // Calculate positions for each match based on next_match_id relationships
+    const matchPositions = new Map<string, { x: number, y: number }>()
+    const MATCH_HEIGHT = 100
+    const ROUND_WIDTH = 340
+    const HEADER_HEIGHT = 60
+
+    // Find the round with the most matches - this will be our reference
+    const maxMatchesInRound = Math.max(...rounds.map(r => r.matches.length))
+    const benchmarkRoundIndex = rounds.findIndex(r => r.matches.length === maxMatchesInRound)
+
+    // Start with the benchmark round - distribute evenly
+    rounds[benchmarkRoundIndex]?.matches.forEach((match, index) => {
+      matchPositions.set(match.id, {
+        x: benchmarkRoundIndex * ROUND_WIDTH,
+        y: HEADER_HEIGHT + (index * MATCH_HEIGHT * 2) // Space them out evenly
+      })
+    })
+
+    // Position rounds BEFORE benchmark (working backwards)
+    for (let roundIndex = benchmarkRoundIndex - 1; roundIndex >= 0; roundIndex--) {
+      const round = rounds[roundIndex]
+      round.matches.forEach((match) => {
+        // Find which match in the next round this feeds into
+        const nextRound = rounds[roundIndex + 1]
+        const nextMatch = nextRound?.matches.find(m => m.id === match.next_match_id)
+
+        if (nextMatch) {
+          const nextPos = matchPositions.get(nextMatch.id)
+          if (nextPos) {
+            // Check if another match also feeds into the same next match
+            const siblingMatch = round.matches.find(
+              m => m.id !== match.id && m.next_match_id === match.next_match_id
+            )
+
+            if (siblingMatch && !matchPositions.has(siblingMatch.id)) {
+              // This is the first of a pair - position above the next match
+              matchPositions.set(match.id, {
+                x: roundIndex * ROUND_WIDTH,
+                y: nextPos.y - MATCH_HEIGHT
+              })
+            } else if (siblingMatch && matchPositions.has(siblingMatch.id)) {
+              // This is the second of a pair - position below the next match
+              matchPositions.set(match.id, {
+                x: roundIndex * ROUND_WIDTH,
+                y: nextPos.y + MATCH_HEIGHT
+              })
+            } else {
+              // Single feeder - align horizontally
+              matchPositions.set(match.id, {
+                x: roundIndex * ROUND_WIDTH,
+                y: nextPos.y
+              })
+            }
+          }
+        } else {
+          // No next match found, use default positioning
+          const existingPositions = Array.from(matchPositions.values())
+            .filter(pos => pos.x === roundIndex * ROUND_WIDTH)
+          const lastY = existingPositions.length > 0
+            ? Math.max(...existingPositions.map(p => p.y))
+            : HEADER_HEIGHT
+          matchPositions.set(match.id, {
+            x: roundIndex * ROUND_WIDTH,
+            y: lastY + MATCH_HEIGHT * 2
+          })
+        }
+      })
+    }
+
+    // Position rounds AFTER benchmark (working forwards)
+    for (let roundIndex = benchmarkRoundIndex + 1; roundIndex < rounds.length; roundIndex++) {
+      const round = rounds[roundIndex]
+      round.matches.forEach((match) => {
+        // Find all matches that feed into this match
+        const feedingMatches = rounds[roundIndex - 1]?.matches.filter(
+          m => m.next_match_id === match.id
+        ) || []
+
+        if (feedingMatches.length === 0) {
+          // No feeding matches, use default position
+          const existingPositions = Array.from(matchPositions.values())
+            .filter(pos => pos.x === roundIndex * ROUND_WIDTH)
+          const lastY = existingPositions.length > 0
+            ? Math.max(...existingPositions.map(p => p.y))
+            : HEADER_HEIGHT
+          matchPositions.set(match.id, {
+            x: roundIndex * ROUND_WIDTH,
+            y: lastY + MATCH_HEIGHT * 2
+          })
+        } else if (feedingMatches.length === 1) {
+          // Single feeder - align horizontally
+          const feederPos = matchPositions.get(feedingMatches[0].id)
+          if (feederPos) {
+            matchPositions.set(match.id, {
+              x: roundIndex * ROUND_WIDTH,
+              y: feederPos.y
+            })
+          }
+        } else {
+          // Multiple feeders - position at midpoint
+          const feederPositions = feedingMatches
+            .map(m => matchPositions.get(m.id))
+            .filter(Boolean) as { x: number, y: number }[]
+
+          if (feederPositions.length > 0) {
+            const avgY = feederPositions.reduce((sum, pos) => sum + pos.y, 0) / feederPositions.length
+            matchPositions.set(match.id, {
+              x: roundIndex * ROUND_WIDTH,
+              y: avgY
+            })
+          }
+        }
+      })
+    }
+
+    // Calculate container dimensions
+    const maxY = Math.max(...Array.from(matchPositions.values()).map(p => p.y)) + 150
+    const containerWidth = rounds.length * ROUND_WIDTH + 10
+
+    // Adjust height for brackets with very few matches (like grand final)
+    const minHeight = bracketType === 'grand-final' && rounds[0]?.matches.length === 1 ? '100px' : '400px'
+
     return (
-      <Card className="min-h-screen bg-card border-border p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary-foreground mb-2 flex items-center justify-center gap-3">
-              <Trophy className="text-accent" size={40} />
-              {title}
-            </h1>
-          </div>
-          <div className="bg-card border border-accent/20 rounded-xl shadow-xl p-8">
-            <div className="flex items-center justify-center h-40">
-              <p className="text-muted-foreground">Tidak ada pertandingan bracket tersedia</p>
-            </div>
+      <Card className="bg-card border-border p-6 mb-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
+            {bracketType === 'grand-final' && <Trophy className="text-accent" size={32} />}
+            {title}
+          </h2>
+        </div>
+
+        <div className="overflow-x-auto">
+          <div className="relative" style={{ width: `${containerWidth}px`, height: `${maxY}px`, minHeight }}>
+            {/* Round Headers */}
+            {rounds.map((round, roundIndex) => (
+              <div
+                key={`header-${round.round}`}
+                className="absolute top-0"
+                style={{ left: `${roundIndex * ROUND_WIDTH}px` }}
+              >
+                <h3 className="text-lg font-semibold text-accent text-center" style={{ width: '280px' }}>
+                  {bracketType === 'grand-final'
+                    ? 'Grand Final'
+                    : `Round ${round.round}`}
+                </h3>
+              </div>
+            ))}
+
+            {/* Matches */}
+            {rounds.map((round) =>
+              round.matches.map((match) => {
+                const pos = matchPositions.get(match.id)
+                if (!pos) return null
+
+                const team1 = teams.find(t => t.id === match.team1_id)
+                const team2 = teams.find(t => t.id === match.team2_id)
+                const hasWinner = match.winner_id !== null && match.winner_id !== undefined
+                const isTeam1Winner = hasWinner && match.team1_id !== null && match.team1_id !== undefined && match.winner_id === match.team1_id
+                const isTeam2Winner = hasWinner && match.team2_id !== null && match.team2_id !== undefined && match.winner_id === match.team2_id
+
+                return (
+                  <div
+                    key={match.id}
+                    className="bg-secondary/40 border border-accent/20 rounded-lg p-3 absolute"
+                    style={{
+                      left: `${pos.x}px`,
+                      top: `${pos.y}px`,
+                      width: '280px'
+                    }}
+                  >
+                    <div className={`flex items-center justify-between p-2 rounded mb-1 ${isTeam1Winner
+                      ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60'
+                      : 'bg-secondary/20'
+                      }`}>
+                      <span className={`font-medium text-sm truncate max-w-[180px] ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'
+                        }`} title={team1?.name || 'TBD'}>
+                        {team1?.name || 'TBD'}
+                      </span>
+                      <span className={`font-bold text-lg ml-3 ${isTeam1Winner ? 'text-emerald-400' : 'text-muted-foreground'
+                        }`}>
+                        {match.team1_score ?? '-'}
+                      </span>
+                    </div>
+
+                    <div className={`flex items-center justify-between p-2 rounded ${isTeam2Winner
+                      ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60'
+                      : 'bg-secondary/20'
+                      }`}>
+                      <span className={`font-medium text-sm truncate max-w-[180px] ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'
+                        }`} title={team2?.name || 'TBD'}>
+                        {team2?.name || 'TBD'}
+                      </span>
+                      <span className={`font-bold text-lg ml-3 ${isTeam2Winner ? 'text-emerald-400' : 'text-muted-foreground'
+                        }`}>
+                        {match.team2_score ?? '-'}
+                      </span>
+                    </div>
+
+                    {match.status === 'in_progress' && (
+                      <div className="mt-2 text-center">
+                        <span className="text-xs text-accent font-medium">Sedang Berlangsung</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            )}
+
+            {/* Connector Lines */}
+            <svg className="absolute top-0 left-0 pointer-events-none" width="100%" height="100%">
+              {rounds.map((round, roundIndex) => {
+                const nextRound = rounds[roundIndex + 1]
+                if (!nextRound) return null
+
+                return round.matches.map((match) => {
+                  if (!match.next_match_id) return null
+
+                  const currentPos = matchPositions.get(match.id)
+                  const nextPos = matchPositions.get(match.next_match_id)
+                  if (!currentPos || !nextPos) return null
+
+                  // Find sibling match (another match with same next_match_id)
+                  const siblingMatch = round.matches.find(
+                    m => m.id !== match.id && m.next_match_id === match.next_match_id
+                  )
+
+                  const x1 = currentPos.x + 280
+                  const y1 = currentPos.y + 50 // Center of match card
+                  const x2 = nextPos.x
+                  const y2 = nextPos.y + 50
+
+                  if (siblingMatch) {
+                    const siblingPos = matchPositions.get(siblingMatch.id)
+                    if (!siblingPos) return null
+
+                    const siblingY = siblingPos.y + 50
+                    const isFirstMatch = currentPos.y < siblingPos.y
+
+                    if (!isFirstMatch) {
+                      // Only draw from the second (bottom) match
+                      const midX = x1 + 30
+
+                      return (
+                        <g key={match.id}>
+                          {/* Horizontal from current match */}
+                          <line x1={x1} y1={y1} x2={midX} y2={y1} stroke="var(--foreground)" strokeWidth="2" />
+                          {/* Horizontal from sibling match */}
+                          <line x1={x1} y1={siblingY} x2={midX} y2={siblingY} stroke="var(--foreground)" strokeWidth="2" />
+                          {/* Vertical connecting both */}
+                          <line x1={midX} y1={siblingY} x2={midX} y2={y1} stroke="var(--foreground)" strokeWidth="2" />
+                          {/* Horizontal to next match */}
+                          <line x1={midX} y1={y2} x2={x2} y2={y2} stroke="var(--foreground)" strokeWidth="2" />
+                          {/* Vertical to next match level */}
+                          <line x1={midX} y1={Math.min(y1, siblingY)} x2={midX} y2={y2} stroke="var(--foreground)" strokeWidth="2" />
+                        </g>
+                      )
+                    }
+                    return null
+                  } else {
+                    // Single feeder - straight horizontal line (solid)
+                    const midX = x1 + 30
+                    return (
+                      <g key={match.id}>
+                        <line x1={x1} y1={y1} x2={midX} y2={y1} stroke="var(--foreground)" strokeWidth="2" />
+                        <line x1={midX} y1={y1} x2={midX} y2={y2} stroke="var(--foreground)" strokeWidth="2" />
+                        <line x1={midX} y1={y2} x2={x2} y2={y2} stroke="var(--foreground)" strokeWidth="2" />
+                      </g>
+                    )
+                  }
+                })
+              })}
+            </svg>
           </div>
         </div>
       </Card>
     )
   }
 
-  // Group matches by round
-  const rounds = matches.reduce((acc, match) => {
-    const roundNumber = match.roundNumber
-    if (!acc[roundNumber]) {
-      acc[roundNumber] = []
-    }
-    acc[roundNumber].push(match)
-    return acc
-  }, {} as Record<number, BracketMatch[]>)
-
-  const sortedRoundNumbers = Object.keys(rounds)
-    .map(Number)
-    .sort((a, b) => a - b)
-
-  const totalRounds = sortedRoundNumbers.length
-
-  // Sort matches within each round
-  Object.keys(rounds).forEach(roundNum => {
-    rounds[Number(roundNum)].sort((a, b) => a.matchNumber - b.matchNumber)
-  })
-
-  const getRoundName = (roundNumber: number, totalRounds: number) => {
-    const roundsFromEnd = totalRounds - roundNumber
-
-    if (roundsFromEnd === 0) return "Final"
-    if (roundsFromEnd === 1) return "Semifinals"
-    if (roundsFromEnd === 2) return "Quarterfinals"
-    return `Round ${roundNumber}`
-  }
-
-  // Match Card Component
-  const MatchCard = ({ match }: { match: BracketMatch }) => {
-    const team1Name = match.team1?.name || 'TBD'
-    const team2Name = match.team2?.name || 'TBD'
-    const isTeam1Winner = match.winnerId === match.team1?.id
-    const isTeam2Winner = match.winnerId === match.team2?.id
-
-    return (
-      <div className="bg-card border border-accent/20 rounded-lg p-3 mb-4 min-w-[260px]">
-        <div className={`flex items-center justify-between p-3 rounded ${isTeam1Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
-          }`}>
-          <span className={`font-medium text-sm truncate max-w-[160px] ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'}`} title={team1Name}>
-            {team1Name}
-          </span>
-          <span className={`font-bold text-lg ml-3 ${isTeam1Winner ? 'text-emerald-400' : 'text-muted-foreground'}`}>
-            {match.team1Score ?? '-'}
-          </span>
-        </div>
-        <div className={`flex items-center justify-between p-3 rounded mt-1 ${isTeam2Winner ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60' : 'bg-secondary/40'
-          }`}>
-          <span className={`font-medium text-sm truncate max-w-[160px] ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'}`} title={team2Name}>
-            {team2Name}
-          </span>
-          <span className={`font-bold text-lg ml-3 ${isTeam2Winner ? 'text-emerald-400' : 'text-muted-foreground'}`}>
-            {match.team2Score ?? '-'}
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  // Connector Lines Component
-  const ConnectorLines = ({ leftMatches, rightMatches }: { leftMatches: BracketMatch[], rightMatches: BracketMatch[] }) => {
-    return (
-      <div className="relative" style={{ width: '60px' }}>
-        <svg width="60" height="100%" style={{ position: 'absolute', top: 0, left: 0, height: '100%' }}>
-          {rightMatches.map((_, pairIndex) => {
-            const topMatchIndex = pairIndex * 2;
-            const bottomMatchIndex = pairIndex * 2 + 1;
-
-            if (bottomMatchIndex >= leftMatches.length) return null;
-
-            // Calculate positions based on match distribution
-            const totalLeftMatches = leftMatches.length;
-            const spacing = 100 / totalLeftMatches;
-
-            const y1 = (topMatchIndex + 0.5) * spacing;
-            const y2 = (bottomMatchIndex + 0.5) * spacing;
-            const yMid = (y1 + y2) / 2;
-
-            return (
-              <g key={pairIndex}>
-                <line x1="0" y1={`${y1}%`} x2="30" y2={`${y1}%`} stroke="var(--foreground)" strokeWidth="2" />
-                <line x1="0" y1={`${y2}%`} x2="30" y2={`${y2}%`} stroke="var(--foreground)" strokeWidth="2" />
-                <line x1="30" y1={`${y1}%`} x2="30" y2={`${y2}%`} stroke="var(--foreground)" strokeWidth="2" />
-                <line x1="30" y1={`${yMid}%`} x2="60" y2={`${yMid}%`} stroke="var(--foreground)" strokeWidth="2" />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    );
-  };
-
-  // Find champion
-  const finalMatch = rounds[totalRounds]
-  const champion = finalMatch && finalMatch[0] && finalMatch[0].winnerId
-    ? finalMatch[0].team1?.id === finalMatch[0].winnerId
-      ? finalMatch[0].team1?.name
-      : finalMatch[0].team2?.name
-    : "TBD"
-
-  // Calculate total number of teams
-  const totalTeams = rounds[1] ? rounds[1].length * 2 : 0
-
   return (
-    <Card className="bg-card border-border p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-muted-foreground mb-2 flex items-center justify-center gap-3">
-            <Trophy className="text-accent" size={40} />
-            {title}
-          </h1>
-          <p className="text-muted-foreground">{totalTeams}-Team Knockout Tournament • {totalRounds} Rounds</p>
-        </div>
-
-        <div className="bg-card border border-accent/20 rounded-xl shadow-xl p-4 overflow-hidden">
-          <div className="overflow-x-auto">
-            <div className="flex gap-2 min-w-max relative">
-              {sortedRoundNumbers.map((roundNum, index) => {
-                const isLastRound = index === sortedRoundNumbers.length - 1
-                const currentRoundMatches = rounds[roundNum]
-                const nextRoundMatches = rounds[sortedRoundNumbers[index + 1]]
-
-                return (
-                  <React.Fragment key={roundNum}>
-                    {/* Round Column */}
-                    <div className="flex flex-col" style={{ width: '280px' }}>
-                      <h2 className="text-xl font-bold text-foreground mb-4 text-center">
-                        {getRoundName(roundNum, totalRounds)}
-                      </h2>
-                      <div className="flex flex-col justify-around h-full">
-                        {currentRoundMatches.map(match => (
-                          <MatchCard key={match.id} match={match} />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Connector Lines (if not last round) */}
-                    {!isLastRound && nextRoundMatches && (
-                      <ConnectorLines
-                        leftMatches={currentRoundMatches}
-                        rightMatches={nextRoundMatches}
-                      />
-                    )}
-                  </React.Fragment>
-                )
-              })}
-
-              {/* Connector line to Champion */}
-              <div className="flex flex-col justify-center" style={{ width: '60px' }}>
-                <svg width="60" height="20">
-                  <line x1="0" y1="10" x2="60" y2="10" stroke="var(--foreground)" strokeWidth="2" />
-                </svg>
-              </div>
-
-              {/* Champion */}
-              <div className="flex flex-col justify-center">
-                <div className="text-center">
-                  <Award className="text-accent mx-auto mb-3" size={48} />
-                  <h2 className="text-xl font-bold text-foreground mb-3">Juara</h2>
-                  <div className="bg-gradient-to-r from-accent/80 to-accent text-accent-foreground font-bold text-xl py-4 px-6 rounded-lg shadow-lg border border-accent/30 w-80">
-                    {champion}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Highlight hijau menunjukkan tim pemenang • Skor ditampilkan di sebelah kanan</p>
-        </div>
-      </div>
-    </Card>
+    <div className="space-y-8">
+      {renderBracket(upperBracketMatches, 'Upper Bracket (Winners)', 'upper')}
+      {renderBracket(lowerBracketMatches, 'Lower Bracket (Losers)', 'lower')}
+      {renderBracket(grandFinalMatches, 'Grand Final', 'grand-final')}
+      {renderBracket(otherMatches, 'Knockout', 'other')}
+    </div>
   )
 }

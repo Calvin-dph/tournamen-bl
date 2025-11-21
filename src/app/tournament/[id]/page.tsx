@@ -664,8 +664,9 @@ export default function TournamentDetailPage({ params }: PageProps) {
         {/* Knockout Bracket */}
         {knockoutMatches.length > 0 && (
           <TournamentBracket
-            matches={knockoutMatches}
-            title="Babak Knockout"
+            format={tournament.format}
+            matches={matches}
+            teams={teams}
           />
         )}
 
