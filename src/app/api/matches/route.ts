@@ -7,23 +7,35 @@ export async function GET(request: Request) {
     const type = searchParams.get('type') || 'upcoming';
 
     // Fetch recent matches with team information using foreign key relationships
-    const { data: matches, error } = await supabase
+    const baseQuery = supabase
       .from('matches')
       .select(`
-        id,
-        team1_score,
-        team2_score,
-        status,
-        played_at,
-        scheduled_at,
-        updated_at,
-        team1:team1_id(id, name),
-        team2:team2_id(id, name)
+      id,
+      team1_score,
+      team2_score,
+      status,
+      played_at,
+      scheduled_at,
+      updated_at,
+      table_number,
+      team1:team1_id(id, name),
+      team2:team2_id(id, name)
       `)
       .eq('status', type === 'lastMatches' ? 'completed' : 'pending')
-      .not(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', 'is', null)
-      .order(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', { ascending: type === 'lastMatches' ? false : true })
-      .limit(3);
+      .not(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', 'is', null);
+
+    // Order by updated_at for lastMatches, otherwise order by scheduled_at then table_number
+    let query = baseQuery;
+    if (type === 'lastMatches') {
+      query = query.order('updated_at', { ascending: false }).limit(3);
+    } else {
+      query = query
+        .order('scheduled_at', { ascending: true })
+        .order('table_number', { ascending: true })
+        .limit(1);
+    }
+
+    const { data: matches, error } = await query;
 
     if (error) {
       console.error('Error fetching matches:', error);
@@ -51,6 +63,7 @@ export async function GET(request: Request) {
       team2_name: (match.team2 as { name?: string })?.name ?? 'TBA',
       team1_score: match.team1_score,
       team2_score: match.team2_score,
+      table_number: match.table_number ?? null,
       status: match.status,
       scheduled_time: match.scheduled_at || match.played_at,
       updated_at: match.updated_at

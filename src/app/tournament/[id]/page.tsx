@@ -42,6 +42,9 @@ interface Match {
   team2_id?: string
   team1_score?: number
   team2_score?: number
+  team1_balls?: number
+  team2_balls?: number
+  table_number?: number
   winner_id?: string
 }
 
@@ -55,6 +58,9 @@ interface GroupStanding {
   goalsFor: number
   goalsAgainst: number
   goalDifference: number
+  ballsFor: number
+  ballsAgainst: number
+  ballDifference: number
   points: number
 }
 
@@ -248,6 +254,9 @@ export default function TournamentDetailPage({ params }: PageProps) {
       goalsFor: 0,
       goalsAgainst: 0,
       goalDifference: 0,
+      ballsFor: 0,
+      ballsAgainst: 0,
+      ballDifference: 0,
       points: 0,
     }))
 
@@ -262,6 +271,8 @@ export default function TournamentDetailPage({ params }: PageProps) {
       if (team1Standing && team2Standing) {
         const team1Score = match.team1_score || 0
         const team2Score = match.team2_score || 0
+        const team1Balls = match.team1_balls || 0
+        const team2Balls = match.team2_balls || 0
 
         team1Standing.played += 1
         team2Standing.played += 1
@@ -269,6 +280,10 @@ export default function TournamentDetailPage({ params }: PageProps) {
         team1Standing.goalsAgainst += team2Score
         team2Standing.goalsFor += team2Score
         team2Standing.goalsAgainst += team1Score
+        team1Standing.ballsFor += team1Balls
+        team1Standing.ballsAgainst += team2Balls
+        team2Standing.ballsFor += team2Balls
+        team2Standing.ballsAgainst += team1Balls
 
         if (team1Score > team2Score) {
           team1Standing.won += 1
@@ -287,13 +302,15 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
         team1Standing.goalDifference = team1Standing.goalsFor - team1Standing.goalsAgainst
         team2Standing.goalDifference = team2Standing.goalsFor - team2Standing.goalsAgainst
+        team1Standing.ballDifference = team1Standing.ballsFor - team1Standing.ballsAgainst
+        team2Standing.ballDifference = team2Standing.ballsFor - team2Standing.ballsAgainst
       }
     })
 
+
     return standings.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points
-      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
-      if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+      if (b.ballDifference !== a.ballDifference) return b.ballDifference - a.ballDifference
       return a.teamName.localeCompare(b.teamName)
     })
   }
@@ -312,7 +329,22 @@ export default function TournamentDetailPage({ params }: PageProps) {
   };
 
   // Get unique groups
-  const groups = Array.from(new Set(groupMatches.map(match => match.round_name))).filter(Boolean)
+  const groups = Array.from(
+    new Set(
+      groupMatches
+        .map(m => m.round_name)
+        .filter(Boolean) as string[]
+    )
+  ).sort((a, b) => {
+    const aNum = parseInt((a.match(/(\d+)$/) || [])[1] || '', 10)
+    const bNum = parseInt((b.match(/(\d+)$/) || [])[1] || '', 10)
+
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum
+    if (!isNaN(aNum)) return -1
+    if (!isNaN(bNum)) return 1
+
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+  })
 
   if (loading) {
     return (
@@ -453,10 +485,34 @@ export default function TournamentDetailPage({ params }: PageProps) {
             <div className="grid gap-4 md:gap-6 xl:grid-cols-2">
               {groups.map((groupName) => {
                 const standings = calculateGroupStandings(groupName!)
-                const groupMatchList = groupMatches.filter(match => match.round_name === groupName)
+                const groupMatchList = groupMatches
+                  .filter(match => match.round_name === groupName)
+                  .sort((a, b) => {
+                    const parseTime = (s?: string) => {
+                      if (!s) return Infinity
+                      const t = Date.parse(s)
+                      return Number.isNaN(t) ? Infinity : t
+                    }
+
+                    const tA = parseTime(a.scheduled_at)
+                    const tB = parseTime(b.scheduled_at)
+                    if (tA !== tB) return tA - tB
+
+                    // If scheduled times are equal or both missing, sort by table_number (if present)
+                    const tableA = typeof a.table_number === 'number' ? a.table_number : Infinity
+                    const tableB = typeof b.table_number === 'number' ? b.table_number : Infinity
+                    if (tableA !== tableB) return tableA - tableB
+
+                    // Fallback to match_number, then id for stable ordering
+                    const mA = typeof a.match_number === 'number' ? a.match_number : Infinity
+                    const mB = typeof b.match_number === 'number' ? b.match_number : Infinity
+                    if (mA !== mB) return mA - mB
+
+                    return a.id.localeCompare(b.id)
+                  })
 
                 return (
-                  <Card key={groupName} className="bg-card border-border">
+                  <Card key={groupName} className="bg-card border-border w-full overflow-hidden">
                     <CardHeader>
                       <CardTitle className="text-foreground flex items-center justify-between">
                         <span>
@@ -469,7 +525,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                         </Badge>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 w-full overflow-hidden">
                       {/* Standings */}
                       <div>
                         <h4 className="text-sm font-semibold text-accent mb-2">Klasemen</h4>
@@ -481,7 +537,9 @@ export default function TournamentDetailPage({ params }: PageProps) {
                                 <TableHead className="min-w-[120px]">Tim</TableHead>
                                 <TableHead className="text-center w-8">M</TableHead>
                                 <TableHead className="text-center w-8">W</TableHead>
-                                <TableHead className="text-center w-8 hidden sm:table-cell">L</TableHead>
+                                <TableHead className="text-center w-8">D</TableHead>
+                                <TableHead className="text-center w-8">L</TableHead>
+                                <TableHead className="text-center w-8">BD</TableHead>
                                 <TableHead className="text-center w-8">Pts</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -494,7 +552,16 @@ export default function TournamentDetailPage({ params }: PageProps) {
                                   </TableCell>
                                   <TableCell className="text-center text-secondary-foreground/70">{standing.played}</TableCell>
                                   <TableCell className="text-center text-secondary-foreground/70">{standing.won}</TableCell>
-                                  <TableCell className="text-center text-secondary-foreground/70 hidden sm:table-cell">{standing.lost}</TableCell>
+                                  <TableCell className="text-center text-secondary-foreground/70">{standing.drawn}</TableCell>
+                                  <TableCell className="text-center text-secondary-foreground/70">{standing.lost}</TableCell>
+                                  <TableCell className={`text-center font-medium ${standing.ballDifference > 0
+                                    ? 'text-green-600'
+                                    : standing.ballDifference < 0
+                                      ? 'text-red-600'
+                                      : 'text-secondary-foreground/70'
+                                    }`}>
+                                    {standing.ballDifference > 0 ? `+${standing.ballDifference}` : standing.ballDifference}
+                                  </TableCell>
                                   <TableCell className="text-center font-semibold text-accent">{standing.points}</TableCell>
                                 </TableRow>
                               ))}
@@ -525,10 +592,19 @@ export default function TournamentDetailPage({ params }: PageProps) {
                                     <span className="text-accent text-xs sm:text-sm flex-shrink-0">vs</span>
                                     <span className="font-medium truncate md:w-[50%]">{team2?.name || 'TBD'}</span>
                                   </div>
-                                  <div className="mt-2">
-                                    <span className={`text-sm ${isCompleted ? 'text-accent font-bold' : 'text-muted-foreground font-bold'}`}>
-                                      {scoreDisplay}
-                                    </span>
+                                  <div className="mt-2 space-y-1">
+                                    <div>
+                                      <span className={`text-sm ${isCompleted ? 'text-accent font-bold' : 'text-muted-foreground font-bold'}`}>
+                                        {scoreDisplay}
+                                      </span>
+                                    </div>
+                                    {match.table_number && match.scheduled_at && (
+                                      <div>
+                                        <span className="text-xs text-muted-foreground">
+                                          Meja {match.table_number}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>

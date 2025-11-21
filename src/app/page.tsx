@@ -26,6 +26,7 @@ interface Match {
   team2_score: number | null;
   status: string;
   scheduled_time: string;
+  table_number?: number;
   updated_at?: string;
 }
 
@@ -266,12 +267,19 @@ export default function Home() {
                           {formatDate(match.scheduled_time)}
                         </span>
                       </div>
-                      <div className="text-center">
+                      <div className="text-center space-y-2">
                         <div className="flex items-center justify-center gap-4">
                           <span className="font-medium text-sm truncate w-[50%]" title={match.team1_name}>{match.team1_name}</span>
                           <span className="text-muted-foreground">vs</span>
                           <span className="font-medium text-sm truncate w-[50%]" title={match.team2_name}>{match.team2_name}</span>
                         </div>
+                        {match.table_number && (
+                          <div>
+                            <span className="text-xs text-muted-foreground">
+                              Meja {match.table_number}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
