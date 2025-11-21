@@ -424,19 +424,25 @@ export default function TournamentDetailPage({ params }: PageProps) {
 
         {/* Participants */}
         {teams.length > 0 && (
-          <Card className="bg-card border-border">
+          <Card className="bg-card border-border w-full">
             <CardHeader>
               <CardTitle className="text-lg md:text-xl text-foreground">Peserta ({teams.length})</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <CardContent className="w-full overflow-hidden">
+              <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {teams.map((team) => (
-                  <div key={team.id} className="bg-secondary border border-border rounded-lg p-3">
-                    <div className="font-medium text-foreground truncate">{team.name}</div>
+                  <div
+                    key={team.id}
+                    className="bg-secondary border border-border rounded-lg p-3 flex items-center min-w-0"
+                  >
+                    <div className="font-medium text-foreground truncate min-w-0 flex-1">
+                      {team.name}
+                    </div>
                   </div>
                 ))}
               </div>
             </CardContent>
+
           </Card>
         )}
 
@@ -512,17 +518,19 @@ export default function TournamentDetailPage({ params }: PageProps) {
                               : match.status === 'in_progress' ? 'Sedang Berlangsung' : match.scheduled_at ? formatDate(match.scheduled_at) : 'Terjadwal'
 
                             return (
-                              <div key={match.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-secondary border border-border rounded-lg p-3 gap-2 w-full">
-                                <div className="flex-1 w-100">
-                                  <div className="text-sm text-foreground flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                    <span className="font-medium truncate">{team1?.name || 'TBD'}</span>
+                              <div key={match.id} className="flex flex-col sm:flex-row items-center justify-center bg-secondary border border-border rounded-lg p-3 gap-2 w-full text-center">
+                                <div className="w-full">
+                                  <div className="text-sm text-foreground flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                                    <span className="font-medium truncate md:w-[50%]">{team1?.name || 'TBD'}</span>
                                     <span className="text-accent text-xs sm:text-sm flex-shrink-0">vs</span>
-                                    <span className="font-medium truncate">{team2?.name || 'TBD'}</span>
+                                    <span className="font-medium truncate md:w-[50%]">{team2?.name || 'TBD'}</span>
+                                  </div>
+                                  <div className="mt-2">
+                                    <span className={`text-sm ${isCompleted ? 'text-accent font-bold' : 'text-muted-foreground font-bold'}`}>
+                                      {scoreDisplay}
+                                    </span>
                                   </div>
                                 </div>
-                                <span className={`text-sm flex-shrink-0 ${isCompleted ? 'text-accent font-medium' : 'text-muted-foreground'}`}>
-                                  {scoreDisplay}
-                                </span>
                               </div>
                             )
                           })}

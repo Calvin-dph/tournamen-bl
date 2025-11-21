@@ -268,9 +268,9 @@ export default function Home() {
                       </div>
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-4">
-                          <span className="font-medium text-sm truncate max-w-[120px]" title={match.team1_name}>{match.team1_name}</span>
+                          <span className="font-medium text-sm truncate w-[50%]" title={match.team1_name}>{match.team1_name}</span>
                           <span className="text-muted-foreground">vs</span>
-                          <span className="font-medium text-sm truncate max-w-[120px]" title={match.team2_name}>{match.team2_name}</span>
+                          <span className="font-medium text-sm truncate w-[50%]" title={match.team2_name}>{match.team2_name}</span>
                         </div>
                       </div>
                     </div>
