@@ -94,6 +94,8 @@ export default function TournamentDetailPage({ params }: PageProps) {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAllParticipants, setShowAllParticipants] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -328,6 +330,14 @@ export default function TournamentDetailPage({ params }: PageProps) {
     });
   };
 
+  // Toggle group expansion
+  const toggleGroupExpansion = (groupName: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }))
+  }
+
   // Get unique groups
   const groups = Array.from(
     new Set(
@@ -462,7 +472,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent className="w-full overflow-hidden">
               <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {teams.map((team) => (
+                {(showAllParticipants ? teams : teams.slice(0, 6)).map((team) => (
                   <div
                     key={team.id}
                     className="bg-secondary border border-border rounded-lg p-3 flex items-center min-w-0"
@@ -473,6 +483,16 @@ export default function TournamentDetailPage({ params }: PageProps) {
                   </div>
                 ))}
               </div>
+              {teams.length > 6 && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setShowAllParticipants(!showAllParticipants)}
+                    className="text-sm text-accent hover:text-accent/80 font-medium transition-colors"
+                  >
+                    {showAllParticipants ? '← Tampilkan Lebih Sedikit' : `Tampilkan Semua (${teams.length - 6} lainnya) →`}
+                  </button>
+                </div>
+              )}
             </CardContent>
 
           </Card>
@@ -488,6 +508,17 @@ export default function TournamentDetailPage({ params }: PageProps) {
                 const groupMatchList = groupMatches
                   .filter(match => match.round_name === groupName)
                   .sort((a, b) => {
+                    // First, sort by status priority: pending > in_progress > completed
+                    const statusPriority: Record<string, number> = {
+                      'in_progress': 1,
+                      'pending': 2,
+                      'completed': 3,
+                    }
+                    const statusA = statusPriority[a.status] || 999
+                    const statusB = statusPriority[b.status] || 999
+                    if (statusA !== statusB) return statusA - statusB
+
+                    // Then sort by scheduled time
                     const parseTime = (s?: string) => {
                       if (!s) return Infinity
                       const t = Date.parse(s)
@@ -574,7 +605,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                       <div>
                         <h4 className="text-sm font-semibold text-accent mb-2">Pertandingan</h4>
                         <div className="space-y-2">
-                          {groupMatchList.map((match) => {
+                          {(expandedGroups[groupName!] ? groupMatchList : groupMatchList.slice(0, 3)).map((match) => {
                             const team1 = teams.find(t => t.id === match.team1_id)
                             const team2 = teams.find(t => t.id === match.team2_id)
                             const isCompleted = match.status === 'completed'
@@ -611,6 +642,16 @@ export default function TournamentDetailPage({ params }: PageProps) {
                             )
                           })}
                         </div>
+                        {groupMatchList.length > 3 && (
+                          <div className="mt-3 text-center">
+                            <button
+                              onClick={() => toggleGroupExpansion(groupName!)}
+                              className="text-sm text-accent hover:text-accent/80 font-medium transition-colors"
+                            >
+                              {expandedGroups[groupName!] ? '← Tampilkan Lebih Sedikit' : `Tampilkan Semua Pertandingan (${groupMatchList.length - 3} lainnya) →`}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
