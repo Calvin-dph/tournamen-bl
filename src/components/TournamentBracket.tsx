@@ -146,7 +146,6 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
       
       const dataUrl = await toPng(element, {
         quality: 1,
-        pixelRatio: 2,
         backgroundColor: bgColor,
         style: {
           transform: 'scale(1)',
