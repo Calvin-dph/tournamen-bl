@@ -27,6 +27,8 @@ interface Team {
   id: string
   name: string
   tournament_id: string
+  captain: string
+  players: string[]
 }
 
 interface Match {
@@ -96,6 +98,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null)
   const [showAllParticipants, setShowAllParticipants] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
+  const [expandedKnockoutRounds, setExpandedKnockoutRounds] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -475,10 +478,16 @@ export default function TournamentDetailPage({ params }: PageProps) {
                 {(showAllParticipants ? teams : teams.slice(0, 6)).map((team) => (
                   <div
                     key={team.id}
-                    className="bg-secondary border border-border rounded-lg p-3 flex items-center min-w-0"
+                    className="bg-secondary border border-border rounded-lg p-3 flex flex-col min-w-0"
                   >
-                    <div className="font-medium text-foreground truncate min-w-0 flex-1">
+                    <div className="font-medium text-foreground truncate min-w-0 flex-1 mb-1">
                       {team.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-0.5">
+                      {/* <div className="truncate">* {team.players?.[0] || team.captain}</div> */}
+                      {(team.players?.[1] && team.players?.[1] != '-') && (
+                        <div className="truncate">* {team.players[1]}</div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -565,7 +574,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                             <TableHeader>
                               <TableRow>
                                 <TableHead className="w-8">#</TableHead>
-                                <TableHead className="min-w-[120px]">Tim</TableHead>
+                                <TableHead className="min-w-[250px]">Tim</TableHead>
                                 <TableHead className="text-center w-8">M</TableHead>
                                 <TableHead className="text-center w-8">W</TableHead>
                                 <TableHead className="text-center w-8">D</TableHead>
@@ -579,7 +588,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                                 <TableRow key={standing.teamId}>
                                   <TableCell className="font-medium text-accent">{index + 1}</TableCell>
                                   <TableCell className="font-medium text-secondary-foreground">
-                                    <div className="truncate max-w-[120px]">{standing.teamName}</div>
+                                    <div className="truncate max-w-[250px]">{standing.teamName}</div>
                                   </TableCell>
                                   <TableCell className="text-center text-secondary-foreground/70">{standing.played}</TableCell>
                                   <TableCell className="text-center text-secondary-foreground/70">{standing.won}</TableCell>
@@ -668,6 +677,126 @@ export default function TournamentDetailPage({ params }: PageProps) {
             matches={matches}
             teams={teams}
           />
+        )}
+
+        {/* Knockout Match Schedule */}
+        {knockoutMatches.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Jadwal Pertandingan Knockout</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Group matches by round */}
+                {Array.from(new Set(matches.filter(m => m.match_type === 'knockout').map(m => m.round_name).filter(Boolean)))
+                  .sort((a, b) => {
+                    // Sort rounds in chronological order
+                    const getRoundPriority = (roundName: string) => {
+                      const rn = roundName?.toLowerCase() || ''
+                      if (rn.includes('round-of-16') || rn.includes('16-besar')) return 1
+                      if (rn.includes('quarter') || rn.includes('8-besar')) return 2
+                      if (rn.includes('semi') || rn.includes('4-besar')) return 3
+                      if (rn.includes('3rd') || rn.includes('3-4') || rn.includes('peringkat-3')) return 4
+                      if (rn.includes('final') && !rn.includes('grand') && !rn.includes('semi')) return 5
+                      if (rn.includes('grand')) return 6
+                      return 0
+                    }
+                    return getRoundPriority(a || '') - getRoundPriority(b || '')
+                  })
+                  .map((roundName) => {
+                    const roundMatches = matches
+                      .filter(m => m.match_type === 'knockout' && m.round_name === roundName)
+                      .sort((a, b) => {
+                        // Sort by status, then by scheduled time
+                        const statusPriority: Record<string, number> = {
+                          'in_progress': 1,
+                          'pending': 2,
+                          'completed': 3,
+                        }
+                        const statusA = statusPriority[a.status] || 999
+                        const statusB = statusPriority[b.status] || 999
+                        if (statusA !== statusB) return statusA - statusB
+
+                        const parseTime = (s?: string) => {
+                          if (!s) return Infinity
+                          const t = Date.parse(s)
+                          return Number.isNaN(t) ? Infinity : t
+                        }
+                        const tA = parseTime(a.scheduled_at)
+                        const tB = parseTime(b.scheduled_at)
+                        if (tA !== tB) return tA - tB
+
+                        return (a.match_number || 0) - (b.match_number || 0)
+                      })
+
+                    const isExpanded = expandedKnockoutRounds[roundName || '']
+                    const displayMatches = isExpanded ? roundMatches : roundMatches.slice(0, 3)
+
+                    return (
+                      <div key={roundName} className="space-y-2 border border-border rounded-lg p-4 bg-secondary/50">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-accent">
+                            {roundName
+                              ? roundName.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+                              : 'Round'}
+                          </h3>
+                          <Badge variant="outline" className="text-accent border-border">
+                            {roundMatches.length} pertandingan
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          {displayMatches.map((match) => {
+                            const team1 = teams.find(t => t.id === match.team1_id)
+                            const team2 = teams.find(t => t.id === match.team2_id)
+                            const isCompleted = match.status === 'completed'
+                            const scoreDisplay = isCompleted &&
+                              typeof match.team1_score === 'number' &&
+                              typeof match.team2_score === 'number'
+                              ? `${match.team1_score} - ${match.team2_score}`
+                              : match.status === 'in_progress' ? 'Sedang Berlangsung' : match.scheduled_at ? formatDate(match.scheduled_at) : 'Belum Dijadwalkan'
+
+                            return (
+                              <div key={match.id} className="flex flex-col sm:flex-row items-center justify-between bg-card border border-border rounded-lg p-3 gap-2">
+                                <div className="flex-1 w-full">
+                                  <div className="text-sm text-foreground flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                                    <span className="font-medium truncate md:w-[40%]">{team1?.name || 'TBD'}</span>
+                                    <span className="text-accent text-xs sm:text-sm flex-shrink-0">vs</span>
+                                    <span className="font-medium truncate md:w-[40%]">{team2?.name || 'TBD'}</span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-center md:items-end  gap-1">
+                                  <span className={`text-sm ${isCompleted ? 'text-accent font-bold' : 'text-muted-foreground font-medium'}`}>
+                                    {scoreDisplay}
+                                  </span>
+                                  {match.table_number && match.scheduled_at && (
+                                    <span className="text-xs text-muted-foreground">
+                                      Meja {match.table_number}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {roundMatches.length > 3 && (
+                          <div className="mt-3 text-center">
+                            <button
+                              onClick={() => setExpandedKnockoutRounds(prev => ({
+                                ...prev,
+                                [roundName || '']: !prev[roundName || '']
+                              }))}
+                              className="text-sm text-accent hover:text-accent/80 font-medium transition-colors"
+                            >
+                              {isExpanded ? '← Tampilkan Lebih Sedikit' : `Tampilkan Semua Pertandingan (${roundMatches.length - 3} lainnya) →`}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Tournament Progress */}

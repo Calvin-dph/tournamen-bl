@@ -1,8 +1,11 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { Trophy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Trophy, ZoomIn, ZoomOut, Maximize2, X, Download } from 'lucide-react'
+import { toPng } from 'html-to-image'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 interface Team {
   id: string
@@ -42,12 +45,22 @@ interface RoundColumn {
 }
 
 export function TournamentBracket({ format, matches, teams }: TournamentBracketProps) {
+  const bracketContentRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  
+  // Screenshot modal state
+  const [screenshotModal, setScreenshotModal] = useState<{
+    isOpen: boolean
+    imageUrl: string | null
+    bracketTitle: string
+  }>({
+    isOpen: false,
+    imageUrl: null,
+    bracketTitle: ''
+  })
+  const [isCapturing, setIsCapturing] = useState<Record<string, boolean>>({})
+  
   // Filter only knockout matches
   const knockoutMatches = matches.filter(match => match.match_type === 'knockout')
-
-  if (knockoutMatches.length === 0) {
-    return null
-  }
 
   const isDoubleElimination = String(format || '').toLowerCase() === 'double_elimination'
 
@@ -67,6 +80,11 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
     : []
 
   const otherMatches = isDoubleElimination ? [] : knockoutMatches
+
+  // Check if there are no knockout matches
+  if (knockoutMatches.length === 0) {
+    return null
+  }
 
   // Separate matches by bracket type
 
@@ -95,8 +113,81 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
     return rounds
   }
 
+  // Screenshot functionality
+  const captureScreenshot = async (bracketId: string, title: string) => {
+    const element = bracketContentRefs.current[bracketId]
+    if (!element) return
+
+    setIsCapturing(prev => ({ ...prev, [bracketId]: true }))
+
+    try {
+      // Wait a bit for any animations to complete
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Get computed background color from root or body
+      const rootStyles = getComputedStyle(document.documentElement)
+      const backgroundColor = rootStyles.getPropertyValue('--background').trim() || '#ffffff'
+      
+      // Convert CSS variable to actual color if needed
+      let bgColor = backgroundColor
+      if (backgroundColor.includes('hsl')) {
+        // Create a temporary element to compute the color
+        const temp = document.createElement('div')
+        temp.style.color = backgroundColor
+        temp.style.display = 'none'
+        document.body.appendChild(temp)
+        bgColor = getComputedStyle(temp).color
+        document.body.removeChild(temp)
+      } else if (!backgroundColor.startsWith('#')) {
+        // If it's a CSS variable reference, try to get the actual value
+        const actualBg = getComputedStyle(document.body).backgroundColor
+        bgColor = actualBg || '#ffffff'
+      }
+      
+      const dataUrl = await toPng(element, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: bgColor,
+        style: {
+          transform: 'scale(1)',
+        }
+      })
+
+      setScreenshotModal({
+        isOpen: true,
+        imageUrl: dataUrl,
+        bracketTitle: title
+      })
+    } catch (error) {
+      console.error('Error capturing screenshot:', error)
+      alert('Gagal mengambil screenshot. Silakan coba lagi.')
+    } finally {
+      setIsCapturing(prev => ({ ...prev, [bracketId]: false }))
+    }
+  }
+
+  const closeModal = () => {
+    setScreenshotModal({
+      isOpen: false,
+      imageUrl: null,
+      bracketTitle: ''
+    })
+  }
+
+  const downloadImage = () => {
+    if (!screenshotModal.imageUrl) return
+    
+    const link = document.createElement('a')
+    link.download = `${screenshotModal.bracketTitle.replace(/\s+/g, '-').toLowerCase()}.png`
+    link.href = screenshotModal.imageUrl
+    link.click()
+  }
+
+
   const renderBracket = (bracketMatches: Match[], title: string, bracketType: 'upper' | 'lower' | 'grand-final' | 'other') => {
     if (bracketMatches.length === 0) return null
+
+    const bracketId = `bracket-${bracketType}`
 
     const rounds = buildRounds(bracketMatches)
 
@@ -223,16 +314,46 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
     const minHeight = bracketType === 'grand-final' && rounds[0]?.matches.length === 1 ? '100px' : '400px'
 
     return (
-      <Card className="bg-card border-border p-6 mb-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            {bracketType === 'grand-final' && <Trophy className="text-accent" size={32} />}
+      <Card className="bg-card border-border p-4 md:p-6 mb-8">
+        <div className="mb-4 md:mb-6 flex flex-row justify-between gap-3 bracket-controls">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-3">
+            {bracketType === 'grand-final' && <Trophy className="text-accent" size={28} />}
             {title}
           </h2>
+          
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={() => captureScreenshot(bracketId, title)}
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 flex-shrink-0"
+              title="Lihat Fullscreen"
+              disabled={isCapturing[bracketId]}
+            >
+              {isCapturing[bracketId] ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Hint for mobile users */}
+        <div className="mb-3 text-center">
+          <p className="text-xs text-muted-foreground italic">
+            <span className="md:hidden">💡 Tap tombol Maximize untuk melihat bracket secara penuh</span>
+            <span className="hidden md:inline">💡 Klik tombol Maximize untuk melihat bracket dalam mode fullscreen</span>
+          </p>
         </div>
 
         <div className="overflow-x-auto">
-          <div className="relative" style={{ width: `${containerWidth}px`, height: `${maxY}px`, minHeight }}>
+          <div 
+            ref={(el) => { bracketContentRefs.current[bracketId] = el }}
+            className="relative" 
+            style={{ width: `${containerWidth}px`, height: `${maxY}px`, minHeight }}
+          >
             {/* Round Headers */}
             {rounds.map((round, roundIndex) => (
               <div
@@ -379,11 +500,132 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
   }
 
   return (
-    <div className="space-y-8">
-      {renderBracket(upperBracketMatches, 'Upper Bracket (Winners)', 'upper')}
-      {renderBracket(lowerBracketMatches, 'Lower Bracket (Losers)', 'lower')}
-      {renderBracket(grandFinalMatches, 'Grand Final', 'grand-final')}
-      {renderBracket(otherMatches, 'Knockout', 'other')}
-    </div>
+    <>
+      <div className="space-y-8">
+        {renderBracket(upperBracketMatches, 'Upper Bracket (Winners)', 'upper')}
+        {renderBracket(lowerBracketMatches, 'Lower Bracket (Losers)', 'lower')}
+        {renderBracket(grandFinalMatches, 'Grand Final', 'grand-final')}
+        {renderBracket(otherMatches, 'Knockout', 'other')}
+      </div>
+
+      {/* Screenshot Modal */}
+      {screenshotModal.isOpen && screenshotModal.imageUrl && (
+        <div 
+          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center"
+          onClick={closeModal}
+        >
+          <div 
+            className="relative w-full h-full flex flex-col bg-background overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-3 md:p-4 border-b border-border bg-card/95 backdrop-blur flex-shrink-0">
+              <h3 className="text-base md:text-lg font-semibold text-foreground truncate mr-2">
+                {screenshotModal.bracketTitle}
+              </h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={downloadImage}
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 md:h-9 md:w-9"
+                  title="Download"
+                >
+                  <Download className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </Button>
+                <Button
+                  onClick={closeModal}
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 md:h-9 md:w-9"
+                  title="Close"
+                >
+                  <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Modal Content with Zoom/Pan */}
+            <div className="flex-1 min-h-0 bg-background relative">
+              <TransformWrapper
+                initialScale={1}
+                minScale={0.3}
+                maxScale={3}
+                centerOnInit
+                wheel={{ step: 0.1 }}
+                pinch={{ step: 5 }}
+                doubleClick={{ mode: 'reset' }}
+                limitToBounds={false}
+              >
+                {({ zoomIn, zoomOut, resetTransform }) => (
+                  <>
+                    {/* Zoom Controls Overlay */}
+                    <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 bg-card/95 backdrop-blur rounded-lg p-2 border border-border shadow-lg">
+                      <Button
+                        onClick={() => zoomIn()}
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 md:h-9 md:w-9"
+                        title="Zoom In"
+                      >
+                        <ZoomIn className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => resetTransform()}
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 md:h-9 md:w-9"
+                        title="Reset"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => zoomOut()}
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 md:h-9 md:w-9"
+                        title="Zoom Out"
+                      >
+                        <ZoomOut className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                      </Button>
+                    </div>
+
+                    <TransformComponent
+                      wrapperClass="!w-full !h-full"
+                      contentClass="!w-full !h-full !flex !items-center !justify-center"
+                      wrapperStyle={{
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={screenshotModal.imageUrl || ''}
+                        alt={screenshotModal.bracketTitle}
+                        className="max-w-full max-h-full object-contain"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                          width: 'auto',
+                          height: 'auto'
+                        }}
+                      />
+                    </TransformComponent>
+                  </>
+                )}
+              </TransformWrapper>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-2 md:p-3 border-t border-border bg-card/95 backdrop-blur text-center flex-shrink-0">
+              <p className="text-[10px] md:text-xs text-muted-foreground">
+                💡 <span className="hidden sm:inline">Gunakan scroll mouse, pinch gesture, atau tombol untuk zoom. Drag untuk pan. Double-click untuk reset.</span>
+                <span className="sm:hidden">Pinch untuk zoom, drag untuk pan, double-tap untuk reset.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
