@@ -1,4 +1,4 @@
-# TI Billiard Cup 2025 - Registration Landing Page
+# TI Billiard Cup 2025 - Registration Landing Page..
 
 A modern, responsive landing page for the TI Billiard Cup 2025 tournament registration built with Next.js, React, and Tailwind CSS.
 
