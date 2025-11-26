@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { ThemeToggle } from '@/components/theme-toggle';
 import { toPng } from 'html-to-image'
 import { Button } from '@/components/ui/button'
-import { Download, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Camera, Download, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
 
@@ -260,7 +260,6 @@ export default function TournamentDetailPage({ params }: PageProps) {
   // Screenshot functionality
   const captureScreenshot = async (bracketId: string, title: string) => {
     const element = groupsContentRefs.current[bracketId]
-    console.log(element);
 
     if (!element) return
 
@@ -655,7 +654,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                         <div className='flex gap-2'>
                           <Button
                             onClick={() => {
-                              captureScreenshot(groupName, groupName)
+                              captureScreenshot(groupName, groupName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
                             }}
                             variant="outline"
                             size="icon"
@@ -666,7 +665,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                             {isCapturing[groupName] ? (
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
                             ) : (
-                              <Maximize2 className="h-4 w-4" />
+                              <Camera className="h-4 w-4" />
                             )}
                           </Button>
                           <Badge variant="outline" className="text-accent border-border">
