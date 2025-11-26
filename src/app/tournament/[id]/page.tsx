@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TournamentBracket } from '@/components/TournamentBracket'
 import { supabase } from '@/lib/supabase'
 import { ThemeToggle } from '@/components/theme-toggle';
+import { toPng } from 'html-to-image'
+import { Button } from '@/components/ui/button'
+import { Download, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
 
 interface Tournament {
@@ -99,6 +103,19 @@ export default function TournamentDetailPage({ params }: PageProps) {
   const [showAllParticipants, setShowAllParticipants] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
   const [expandedKnockoutRounds, setExpandedKnockoutRounds] = useState<Record<string, boolean>>({})
+
+  // Screenshot modal state
+  const groupsContentRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [screenshotModal, setScreenshotModal] = useState<{
+    isOpen: boolean
+    imageUrl: string | null
+    bracketTitle: string
+  }>({
+    isOpen: false,
+    imageUrl: null,
+    bracketTitle: ''
+  })
+  const [isCapturing, setIsCapturing] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchTournamentData = async () => {
@@ -239,6 +256,81 @@ export default function TournamentDetailPage({ params }: PageProps) {
       team2Score: match.team2_score,
       winnerId: match.winner_id,
     }))
+
+  // Screenshot functionality
+  const captureScreenshot = async (bracketId: string, title: string) => {
+    const element = groupsContentRefs.current[bracketId]
+    console.log(element);
+
+    if (!element) return
+
+    setIsCapturing(prev => ({ ...prev, [bracketId]: true }))
+
+    try {
+      // Wait a bit for the button to hide with opacity transition
+      await new Promise(resolve => setTimeout(resolve, 200))
+
+      // Get computed background color from root or body
+      const rootStyles = getComputedStyle(document.documentElement)
+      const backgroundColor = rootStyles.getPropertyValue('--background').trim() || '#ffffff'
+
+      // Convert CSS variable to actual color if needed
+      let bgColor = backgroundColor
+      if (backgroundColor.includes('hsl')) {
+        // Create a temporary element to compute the color
+        const temp = document.createElement('div')
+        temp.style.color = backgroundColor
+        temp.style.display = 'none'
+        document.body.appendChild(temp)
+        bgColor = getComputedStyle(temp).color
+        document.body.removeChild(temp)
+      } else if (!backgroundColor.startsWith('#')) {
+        // If it's a CSS variable reference, try to get the actual value
+        const actualBg = getComputedStyle(document.body).backgroundColor
+        bgColor = actualBg || '#ffffff'
+      }
+
+      const dataUrl = await toPng(element, {
+        quality: 1,
+        backgroundColor: bgColor,
+        style: {
+          transform: 'scale(1)',
+        },
+        filter: (node) => {
+          // Filter out the screenshot button from the capture
+          return !node.classList?.contains('opacity-0')
+        }
+      })
+
+      setScreenshotModal({
+        isOpen: true,
+        imageUrl: dataUrl,
+        bracketTitle: title
+      })
+    } catch (error) {
+      console.error('Error capturing screenshot:', error)
+      alert('Gagal mengambil screenshot. Silakan coba lagi.')
+    } finally {
+      setIsCapturing(prev => ({ ...prev, [bracketId]: false }))
+    }
+  }
+
+  const downloadImage = () => {
+    if (!screenshotModal.imageUrl) return
+
+    const link = document.createElement('a')
+    link.download = `${screenshotModal.bracketTitle.replace(/\s+/g, '-').toLowerCase()}.png`
+    link.href = screenshotModal.imageUrl
+    link.click()
+  }
+
+  const closeModal = () => {
+    setScreenshotModal({
+      isOpen: false,
+      imageUrl: null,
+      bracketTitle: ''
+    })
+  }
 
   // Calculate group standings
   const calculateGroupStandings = (groupName: string): GroupStanding[] => {
@@ -552,7 +644,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                   })
 
                 return (
-                  <Card key={groupName} className="bg-card border-border w-full overflow-hidden">
+                  <Card ref={(el) => { groupsContentRefs.current[groupName] = el }} key={groupName} className="bg-card border-border w-full overflow-hidden">
                     <CardHeader>
                       <CardTitle className="text-foreground flex items-center justify-between">
                         <span>
@@ -560,9 +652,27 @@ export default function TournamentDetailPage({ params }: PageProps) {
                             ? groupName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
                             : 'Grup'}
                         </span>
-                        <Badge variant="outline" className="text-accent border-border">
-                          {groupMatchList.length} pertandingan
-                        </Badge>
+                        <div className='flex gap-2'>
+                          <Button
+                            onClick={() => {
+                              captureScreenshot(groupName, groupName)
+                            }}
+                            variant="outline"
+                            size="icon"
+                            className={`h-9 w-9 flex-shrink-0 ${isCapturing[groupName] ? 'opacity-0 pointer-events-none' : ''}`}
+                            title="Lihat Fullscreen"
+                            disabled={isCapturing[groupName]}
+                          >
+                            {isCapturing[groupName] ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+                            ) : (
+                              <Maximize2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Badge variant="outline" className="text-accent border-border">
+                            {groupMatchList.length} pertandingan
+                          </Badge>
+                        </div>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 w-full overflow-hidden">
@@ -831,6 +941,125 @@ export default function TournamentDetailPage({ params }: PageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Screenshot Modal */}
+        {screenshotModal.isOpen && screenshotModal.imageUrl && (
+          <div
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center"
+            onClick={closeModal}
+          >
+            <div
+              className="relative w-full h-full flex flex-col bg-background overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-3 md:p-4 border-b border-border bg-card/95 backdrop-blur flex-shrink-0">
+                <h3 className="text-base md:text-lg font-semibold text-foreground truncate mr-2">
+                  {screenshotModal.bracketTitle}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={downloadImage}
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 md:h-9 md:w-9"
+                    title="Download"
+                  >
+                    <Download className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  </Button>
+                  <Button
+                    onClick={closeModal}
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 md:h-9 md:w-9"
+                    title="Close"
+                  >
+                    <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Modal Content with Zoom/Pan */}
+              <div className="flex-1 min-h-0 bg-background relative">
+                <TransformWrapper
+                  initialScale={1}
+                  minScale={0.3}
+                  maxScale={3}
+                  centerOnInit
+                  wheel={{ step: 0.1 }}
+                  pinch={{ step: 5 }}
+                  doubleClick={{ mode: 'reset' }}
+                  limitToBounds={false}
+                >
+                  {({ zoomIn, zoomOut, resetTransform }) => (
+                    <>
+                      {/* Zoom Controls Overlay */}
+                      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 bg-card/95 backdrop-blur rounded-lg p-2 border border-border shadow-lg">
+                        <Button
+                          onClick={() => zoomIn()}
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 md:h-9 md:w-9"
+                          title="Zoom In"
+                        >
+                          <ZoomIn className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => resetTransform()}
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 md:h-9 md:w-9"
+                          title="Reset"
+                        >
+                          <Maximize2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => zoomOut()}
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 md:h-9 md:w-9"
+                          title="Zoom Out"
+                        >
+                          <ZoomOut className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        </Button>
+                      </div>
+
+                      <TransformComponent
+                        wrapperClass="!w-full !h-full"
+                        contentClass="!w-full !h-full !flex !items-center !justify-center"
+                        wrapperStyle={{
+                          width: '100%',
+                          height: '100%',
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={screenshotModal.imageUrl || ''}
+                          alt={screenshotModal.bracketTitle}
+                          className="max-w-full max-h-full object-contain"
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                            width: 'auto',
+                            height: 'auto'
+                          }}
+                        />
+                      </TransformComponent>
+                    </>
+                  )}
+                </TransformWrapper>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-2 md:p-3 border-t border-border bg-card/95 backdrop-blur text-center flex-shrink-0">
+                <p className="text-[10px] md:text-xs text-muted-foreground">
+                  💡 <span className="hidden sm:inline">Gunakan scroll mouse, pinch gesture, atau tombol untuk zoom. Drag untuk pan. Double-click untuk reset.</span>
+                  <span className="sm:hidden">Pinch untuk zoom, drag untuk pan, double-tap untuk reset.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
