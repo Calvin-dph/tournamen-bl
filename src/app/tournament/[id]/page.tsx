@@ -722,7 +722,7 @@ export default function TournamentDetailPage({ params }: PageProps) {
                       {/* Matches */}
                       <div>
                         <h4 className="text-sm font-semibold text-accent mb-2">Pertandingan</h4>
-                        <div className="space-y-2">
+                        <div className="space-y-3 w-full">
                           {(expandedGroups[groupName!] ? groupMatchList : groupMatchList.slice(0, 3)).map((match) => {
                             const team1 = teams.find(t => t.id === match.team1_id)
                             const team2 = teams.find(t => t.id === match.team2_id)
@@ -734,27 +734,38 @@ export default function TournamentDetailPage({ params }: PageProps) {
                               : match.status === 'in_progress' ? 'Sedang Berlangsung' : match.scheduled_at ? formatDate(match.scheduled_at) : 'Terjadwal'
 
                             return (
-                              <div key={match.id} className="flex flex-col sm:flex-row items-center justify-center bg-secondary border border-border rounded-lg p-3 gap-2 w-full text-center">
-                                <div className="w-full">
-                                  <div className="text-sm text-foreground flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
-                                    <span className="font-medium truncate md:w-[50%]">{team1?.name || 'TBD'}</span>
-                                    <span className="text-accent text-xs sm:text-sm flex-shrink-0">vs</span>
-                                    <span className="font-medium truncate md:w-[50%]">{team2?.name || 'TBD'}</span>
+                              <div key={match.id} className="bg-secondary border border-border rounded-lg p-4 w-full overflow-hidden">
+                                <div className="flex flex-col items-center gap-2 w-full">
+                                  {/* Team 1 */}
+                                  <div className="w-full px-2">
+                                    <p className="text-sm font-medium text-foreground text-center truncate">
+                                      {team1?.name || 'TBD'}
+                                    </p>
                                   </div>
-                                  <div className="mt-2 space-y-1">
-                                    <div>
-                                      <span className={`text-sm ${isCompleted ? 'text-accent font-bold' : 'text-muted-foreground font-bold'}`}>
-                                        {scoreDisplay}
-                                      </span>
+
+                                  {/* VS divider */}
+                                  <span className="text-xs text-muted-foreground font-semibold">vs</span>
+
+                                  {/* Team 2 */}
+                                  <div className="w-full px-2">
+                                    <p className="text-sm font-medium text-foreground text-center truncate">
+                                      {team2?.name || 'TBD'}
+                                    </p>
+                                  </div>
+
+                                  {/* Score */}
+                                  <div className="mt-2">
+                                    <span className={`text-lg font-bold ${isCompleted ? 'text-accent' : 'text-muted-foreground'}`}>
+                                      {scoreDisplay}
+                                    </span>
+                                  </div>
+
+                                  {/* Table info */}
+                                  {match.table_number && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      Meja {match.table_number}
                                     </div>
-                                    {match.table_number && match.scheduled_at && (
-                                      <div>
-                                        <span className="text-xs text-muted-foreground">
-                                          Meja {match.table_number}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
+                                  )}
                                 </div>
                               </div>
                             )
