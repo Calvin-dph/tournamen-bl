@@ -40,13 +40,14 @@ interface TournamentBracketProps {
 }
 
 interface RoundColumn {
+  name: string
   round: number
   matches: Match[]
 }
 
 export function TournamentBracket({ format, matches, teams }: TournamentBracketProps) {
   const bracketContentRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  
+
   // Screenshot modal state
   const [screenshotModal, setScreenshotModal] = useState<{
     isOpen: boolean
@@ -58,7 +59,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
     bracketTitle: ''
   })
   const [isCapturing, setIsCapturing] = useState<Record<string, boolean>>({})
-  
+
   // Filter only knockout matches
   const knockoutMatches = matches.filter(match => match.match_type === 'knockout')
 
@@ -106,6 +107,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
     const rounds: RoundColumn[] = Array.from(roundsMap.entries())
       .sort(([a], [b]) => a - b)
       .map(([round, matches]) => ({
+        name: matches[0]?.round_name || `Round ${round}`,
         round,
         matches: matches.sort((a, b) => (a.match_number || 0) - (b.match_number || 0))
       }))
@@ -123,11 +125,11 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
     try {
       // Wait a bit for any animations to complete
       await new Promise(resolve => setTimeout(resolve, 100))
-      
+
       // Get computed background color from root or body
       const rootStyles = getComputedStyle(document.documentElement)
       const backgroundColor = rootStyles.getPropertyValue('--background').trim() || '#ffffff'
-      
+
       // Convert CSS variable to actual color if needed
       let bgColor = backgroundColor
       if (backgroundColor.includes('hsl')) {
@@ -143,7 +145,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
         const actualBg = getComputedStyle(document.body).backgroundColor
         bgColor = actualBg || '#ffffff'
       }
-      
+
       const dataUrl = await toPng(element, {
         quality: 1,
         backgroundColor: bgColor,
@@ -175,7 +177,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
 
   const downloadImage = () => {
     if (!screenshotModal.imageUrl) return
-    
+
     const link = document.createElement('a')
     link.download = `${screenshotModal.bracketTitle.replace(/\s+/g, '-').toLowerCase()}.png`
     link.href = screenshotModal.imageUrl
@@ -319,7 +321,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
             {bracketType === 'grand-final' && <Trophy className="text-accent" size={28} />}
             {title}
           </h2>
-          
+
           {/* Zoom Controls */}
           <div className="flex items-center gap-2 flex-wrap">
             <Button
@@ -348,9 +350,9 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
         </div>
 
         <div className="overflow-x-auto">
-          <div 
+          <div
             ref={(el) => { bracketContentRefs.current[bracketId] = el }}
-            className="relative" 
+            className="relative"
             style={{ width: `${containerWidth}px`, height: `${maxY}px`, minHeight }}
           >
             {/* Round Headers */}
@@ -363,7 +365,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
                 <h3 className="text-lg font-semibold text-accent text-center" style={{ width: '280px' }}>
                   {bracketType === 'grand-final'
                     ? 'Grand Final'
-                    : `Round ${round.round}`}
+                    : round.name || `Round ${round.round}`}
                 </h3>
               </div>
             ))}
@@ -509,11 +511,11 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
 
       {/* Screenshot Modal */}
       {screenshotModal.isOpen && screenshotModal.imageUrl && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center"
           onClick={closeModal}
         >
-          <div 
+          <div
             className="relative w-full h-full flex flex-col bg-background overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -598,7 +600,7 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
                       }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
+                      <img
                         src={screenshotModal.imageUrl || ''}
                         alt={screenshotModal.bracketTitle}
                         className="max-w-full max-h-full object-contain"
