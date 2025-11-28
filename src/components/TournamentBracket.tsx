@@ -31,6 +31,7 @@ interface Match {
   table_number?: number
   winner_id?: string
   next_match_id?: string | null
+  note?: string
 }
 
 interface TournamentBracketProps {
@@ -385,46 +386,52 @@ export function TournamentBracket({ format, matches, teams }: TournamentBracketP
                 return (
                   <div
                     key={match.id}
-                    className="bg-secondary/40 border border-accent/20 rounded-lg p-3 absolute"
+                    className='absolute'
                     style={{
                       left: `${pos.x}px`,
                       top: `${pos.y}px`,
                       width: '280px'
                     }}
                   >
-                    <div className={`flex items-center justify-between p-2 rounded mb-1 ${isTeam1Winner
-                      ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60'
-                      : 'bg-secondary/20'
-                      }`}>
-                      <span className={`font-medium text-sm truncate max-w-[180px] ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'
-                        }`} title={team1?.name || 'TBD'}>
-                        {team1?.name || 'TBD'}
-                      </span>
-                      <span className={`font-bold text-lg ml-3 ${isTeam1Winner ? 'text-emerald-400' : 'text-muted-foreground'
-                        }`}>
-                        {match.team1_score ?? '-'}
-                      </span>
+                    <div className="text-center text-sm text-muted-foreground mb-2">
+                      {match.note}
                     </div>
-
-                    <div className={`flex items-center justify-between p-2 rounded ${isTeam2Winner
-                      ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60'
-                      : 'bg-secondary/20'
-                      }`}>
-                      <span className={`font-medium text-sm truncate max-w-[180px] ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'
-                        }`} title={team2?.name || 'TBD'}>
-                        {team2?.name || 'TBD'}
-                      </span>
-                      <span className={`font-bold text-lg ml-3 ${isTeam2Winner ? 'text-emerald-400' : 'text-muted-foreground'
+                    <div
+                      className="bg-secondary/40 border border-accent/20 rounded-lg p-3 ">
+                      <div className={`flex items-center justify-between p-2 rounded mb-1 ${isTeam1Winner
+                        ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60'
+                        : 'bg-secondary/20'
                         }`}>
-                        {match.team2_score ?? '-'}
-                      </span>
-                    </div>
-
-                    {match.status === 'in_progress' && (
-                      <div className="mt-2 text-center">
-                        <span className="text-xs text-accent font-medium">Sedang Berlangsung</span>
+                        <span className={`font-medium text-sm truncate max-w-[180px] ${isTeam1Winner ? 'text-emerald-400' : 'text-foreground'
+                          }`} title={team1?.name || 'TBD'}>
+                          {team1?.name || 'TBD'}
+                        </span>
+                        <span className={`font-bold text-lg ml-3 ${isTeam1Winner ? 'text-emerald-400' : 'text-muted-foreground'
+                          }`}>
+                          {match.team1_score ?? '-'}
+                        </span>
                       </div>
-                    )}
+
+                      <div className={`flex items-center justify-between p-2 rounded ${isTeam2Winner
+                        ? 'bg-emerald-500/15 border-l-4 border-emerald-500/60'
+                        : 'bg-secondary/20'
+                        }`}>
+                        <span className={`font-medium text-sm truncate max-w-[180px] ${isTeam2Winner ? 'text-emerald-400' : 'text-foreground'
+                          }`} title={team2?.name || 'TBD'}>
+                          {team2?.name || 'TBD'}
+                        </span>
+                        <span className={`font-bold text-lg ml-3 ${isTeam2Winner ? 'text-emerald-400' : 'text-muted-foreground'
+                          }`}>
+                          {match.team2_score ?? '-'}
+                        </span>
+                      </div>
+
+                      {match.status === 'in_progress' && (
+                        <div className="mt-2 text-center">
+                          <span className="text-xs text-accent font-medium">Sedang Berlangsung</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               })
