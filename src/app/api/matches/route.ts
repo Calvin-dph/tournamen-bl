@@ -10,17 +10,19 @@ export async function GET(request: Request) {
     const baseQuery = supabase
       .from('matches')
       .select(`
-      id,
-      team1_score,
-      team2_score,
-      status,
-      played_at,
-      scheduled_at,
-      updated_at,
-      table_number,
-      team1:team1_id(id, name),
-      team2:team2_id(id, name)
-      `)
+        id,
+        team1_score,
+        team2_score,
+        status,
+        played_at,
+        scheduled_at,
+        updated_at,
+        table_number,
+        team1:team1_id(id, name),
+        team2:team2_id(id, name),
+        tournament:tournament_id!inner(id, is_active)
+        `)
+      .eq('tournament.is_active', true)
       .eq('status', type === 'lastMatches' ? 'completed' : 'pending')
       .not(type === 'lastMatches' ? 'updated_at' : 'scheduled_at', 'is', null);
 
